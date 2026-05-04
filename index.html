@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>✓ To-Do</h1>
+            <button id="sign-in-btn" class="btn-sign-in">Sign in with Microsoft</button>
+            <button id="sign-out-btn" class="btn-sign-out hidden">Sign out</button>
+        </header>
+
+        <main id="app-content" class="hidden">
+            <form id="add-task-form">
+                <input type="text" id="task-input" placeholder="Add a task..." autocomplete="off" />
+                <button type="submit" class="btn-add">+</button>
+            </form>
+
+            <div id="task-list" class="task-list">
+                <p class="empty-state">Loading tasks...</p>
+            </div>
+        </main>
+
+        <div id="signed-out-msg" class="signed-out-msg">
+            <p>Sign in with your Microsoft account to sync with Microsoft To-Do.</p>
+        </div>
+    </div>
+
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
