@@ -63,13 +63,38 @@
             margin-top: 12px;
             display: none;
         }
+        .password-wrapper {
+            position: relative;
+            margin-bottom: 16px;
+        }
+        .password-wrapper input {
+            margin-bottom: 0;
+            padding-right: 44px;
+        }
+        .peek-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1.1rem;
+            width: auto;
+            padding: 4px;
+        }
+        .peek-btn:hover { color: #ccc; background: none; }
     </style>
 </head>
 <body>
     <div class="login-card">
         <h1>To-Do</h1>
         <form id="login-form">
-            <input type="password" id="password" placeholder="Password" autofocus />
+            <div class="password-wrapper">
+                <input type="password" id="password" placeholder="Password" autofocus />
+                <button type="button" class="peek-btn" id="peek-btn" tabindex="-1">👁</button>
+            </div>
             <button type="submit">Sign in</button>
         </form>
         <p class="error" id="error-msg">Incorrect password</p>
@@ -89,6 +114,12 @@
                 document.getElementById("error-msg").style.display = "block";
             }
         });
+
+        const peekBtn = document.getElementById("peek-btn");
+        const pwInput = document.getElementById("password");
+        peekBtn.addEventListener("mousedown", () => { pwInput.type = "text"; });
+        peekBtn.addEventListener("mouseup", () => { pwInput.type = "password"; });
+        peekBtn.addEventListener("mouseleave", () => { pwInput.type = "password"; });
     </script>
 </body>
 </html>
