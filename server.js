@@ -7,6 +7,7 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const APP_PASSWORD = process.env.APP_PASSWORD || "todo";
+const API_KEY = process.env.API_KEY || "";
 
 app.use(cors());
 app.use(express.json());
@@ -18,12 +19,12 @@ app.use(session({
     cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
 }));
 
-// Auth middleware — skip for login routes and static login page
+// Auth middleware — session OR API key
 function requireAuth(req, res, next) {
     if (req.session.authenticated) return next();
+    if (API_KEY && req.headers["x-api-key"] === API_KEY) return next();
     if (req.path === "/login" || req.path === "/api/login") return next();
     if (req.path.startsWith("/api/")) return res.status(401).json({ error: "unauthorized" });
-    // Serve login page for non-API requests
     return res.sendFile(path.join(__dirname, "login.html"));
 }
 
