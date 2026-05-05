@@ -295,14 +295,29 @@ function renderTasks(tasks) {
         taskList.appendChild(createTaskElement(task, false));
     });
 
+    // Sort sections by average priority (P0=0, P1=1, P2=2, none=3)
+    const priorityOrder = { P0: 0, P1: 1, P2: 2 };
+    const sortedPrefixes = Object.keys(groups).sort((a, b) => {
+        const avgA = groups[a].reduce((sum, t) => {
+            const p = parsePriority(t.title).priority;
+            return sum + (p ? priorityOrder[p] : 3);
+        }, 0) / groups[a].length;
+        const avgB = groups[b].reduce((sum, t) => {
+            const p = parsePriority(t.title).priority;
+            return sum + (p ? priorityOrder[p] : 3);
+        }, 0) / groups[b].length;
+        if (avgA !== avgB) return avgA - avgB;
+        return a.localeCompare(b);
+    });
+
     // Render each prefix group as collapsible
-    Object.keys(groups).sort().forEach((prefix) => {
+    sortedPrefixes.forEach((prefix) => {
         const section = document.createElement("details");
         section.className = "prefix-section";
         section.open = true;
 
         const summary = document.createElement("summary");
-        summary.textContent = prefix;
+        summary.textContent = `${prefix} (${groups[prefix].length})`;
         section.appendChild(summary);
 
         const list = document.createElement("div");
