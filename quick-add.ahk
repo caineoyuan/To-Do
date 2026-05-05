@@ -1,18 +1,68 @@
 ; Quick-Add To-Do — Global Hotkey (Ctrl+Shift+X)
 ; Requires AutoHotkey v2
-; Opens a small browser popup at your cursor to add a task
+; Shows a dark-themed popup at cursor to add a task via API
 
 #Requires AutoHotkey v2.0
+
+TraySetIcon(A_ScriptDir . "\favicon.ico")
 
 ^+x:: {
     MouseGetPos(&mx, &my)
     
-    ; Position the window near the cursor
-    winX := mx - 180
-    winY := my - 30
+    g := Gui("+AlwaysOnTop -Caption +Border")
+    g.BackColor := "2a2a2a"
+    g.MarginX := 12
+    g.MarginY := 12
+    g.SetFont("s11 cffffff", "Segoe UI")
+
+    ; Set window icon
+    icoPath := A_ScriptDir . "\favicon.ico"
+    try {
+        hIcon := DllCall("LoadImage", "Ptr", 0, "Str", icoPath, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0x10, "Ptr")
+        DllCall("SendMessage", "Ptr", g.Hwnd, "UInt", 0x80, "Ptr", 0, "Ptr", hIcon)
+        DllCall("SendMessage", "Ptr", g.Hwnd, "UInt", 0x80, "Ptr", 1, "Ptr", hIcon)
+    }
     
-    ; Open a small Edge window (app mode, no toolbar)
-    url := "https://to-do-neo.up.railway.app/quick-add.html"
-    edge := "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-    Run('"' . edge . '" --app="' . url . '" --window-size=380,60 --window-position=' . winX . ',' . winY)
+    ed := g.AddEdit("w320 h26 Background1e1e1e cffffff -E0x200", "")
+    ed.Opt("+0x1500")  ; EM_SETCUEBANNER style
+    DllCall("SendMessage", "Ptr", ed.Hwnd, "UInt", 0x1501, "Int", 1, "Str", "Add a task...")
+    
+    ; Hidden default button to catch Enter
+    defBtn := g.AddButton("Default x-100 y-100 w1 h1", "OK")
+    defBtn.OnEvent("Click", doSubmit)
+    
+    g.OnEvent("Escape", doClose)
+    g.OnEvent("Close", doClose)
+    
+    doClose(*) {
+        g.Destroy()
+    }
+    
+    doSubmit(*) {
+        title := ed.Value
+        if (title = "")
+            return
+        
+        url := "https://to-do-neo.up.railway.app/api/tasks"
+        body := '{"title":"' . StrReplace(StrReplace(title, "\", "\\"), '"', '\"') . '"}'
+        
+        try {
+            http := ComObject("WinHttp.WinHttpRequest.5.1")
+            http.Open("POST", url, false)
+            http.SetRequestHeader("Content-Type", "application/json")
+            http.SetRequestHeader("X-API-Key", "c30e37b7-0a39-45db-8808-4ec306e5d9b1")
+            http.Send(body)
+        }
+        
+        g.Destroy()
+    }
+    
+    winX := mx - 180
+    winY := my - 25
+    g.Show("x" . winX . " y" . winY)
+    
+    ; Apply rounded corners to window (Windows 11)
+    try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", g.Hwnd, "Int", 33, "Int*", 2, "Int", 4)
+    
+    ed.Focus()
 }
