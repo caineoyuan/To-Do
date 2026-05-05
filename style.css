@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap');
+
 * {
     margin: 0;
     padding: 0;
@@ -6,66 +8,43 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background: #1e1e1e;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     padding: 40px 20px;
-    color: #e0e0e0;
+    color: #f0f0f0;
 }
 
 .app {
     width: 100%;
     max-width: 500px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
+    background: #2a2a2a;
+    border-radius: 16px;
     padding: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid #3a3a3a;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     margin-bottom: 24px;
 }
 
 h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #fff;
+    font-family: 'DM Serif Text', Georgia, serif;
+    font-size: 1.8rem;
+    font-weight: 400;
+    font-style: italic;
+    color: #f0f0f0;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.btn-sign-in, .btn-sign-out {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.btn-sign-in {
-    background: #0078d4;
-    color: white;
-}
-
-.btn-sign-in:hover {
-    background: #106ebe;
-    transform: translateY(-1px);
-}
-
-.btn-sign-out {
-    background: rgba(255, 255, 255, 0.1);
-    color: #aaa;
-}
-
-.btn-sign-out:hover {
-    background: rgba(255, 255, 255, 0.2);
+.title-icon {
+    color: #4caf50;
 }
 
 #add-task-form {
@@ -77,22 +56,23 @@ h1 {
 #task-input {
     flex: 1;
     padding: 14px 18px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid #444;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f0f0f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 1rem;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 #task-input::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: #888;
 }
 
 #task-input:focus {
     border-color: #0078d4;
-    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.2);
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.12);
 }
 
 .btn-add {
@@ -123,12 +103,12 @@ h1 {
 
 .task-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     padding: 14px 16px;
     background: rgba(255, 255, 255, 0.06);
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid #3a3a3a;
     transition: all 0.3s;
     animation: slideIn 0.3s ease;
 }
@@ -145,7 +125,7 @@ h1 {
 }
 
 .task-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .task-item.completed {
@@ -162,42 +142,161 @@ h1 {
 .task-checkbox {
     width: 22px;
     height: 22px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    margin-top: 1px;
+    position: relative;
 }
 
-.task-checkbox:hover {
-    border-color: #4caf50;
-    background: rgba(76, 175, 80, 0.1);
+.task-checkbox::before {
+    content: '';
+    width: 22px;
+    height: 22px;
+    display: block;
+    background-color: rgba(255, 255, 255, 0.4);
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 3.5C7.30558 3.5 3.5 7.30558 3.5 12C3.5 16.6944 7.30558 20.5 12 20.5C16.6944 20.5 20.5 16.6944 20.5 12C20.5 7.30558 16.6944 3.5 12 3.5ZM2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12Z' fill='%23212121'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 3.5C7.30558 3.5 3.5 7.30558 3.5 12C3.5 16.6944 7.30558 20.5 12 20.5C16.6944 20.5 20.5 16.6944 20.5 12C20.5 7.30558 16.6944 3.5 12 3.5ZM2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12Z' fill='%23212121'/%3E%3C/svg%3E");
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    transition: background-color 0.2s;
 }
 
-.task-checkbox.checked {
-    background: #4caf50;
-    border-color: #4caf50;
+.task-checkbox:hover::before {
+    background-color: #4caf50;
+}
+
+.task-checkbox.checked::before {
+    background-color: #4caf50;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM15.2197 8.96967L10.75 13.4393L8.78033 11.4697C8.48744 11.1768 8.01256 11.1768 7.71967 11.4697C7.42678 11.7626 7.42678 12.2374 7.71967 12.5303L10.2197 15.0303C10.5126 15.3232 10.9874 15.3232 11.2803 15.0303L16.2803 10.0303C16.5732 9.73744 16.5732 9.26256 16.2803 8.96967C15.9874 8.67678 15.5126 8.67678 15.2197 8.96967Z' fill='%23212121'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM15.2197 8.96967L10.75 13.4393L8.78033 11.4697C8.48744 11.1768 8.01256 11.1768 7.71967 11.4697C7.42678 11.7626 7.42678 12.2374 7.71967 12.5303L10.2197 15.0303C10.5126 15.3232 10.9874 15.3232 11.2803 15.0303L16.2803 10.0303C16.5732 9.73744 16.5732 9.26256 16.2803 8.96967C15.9874 8.67678 15.5126 8.67678 15.2197 8.96967Z' fill='%23212121'/%3E%3C/svg%3E");
+    border-radius: 50%;
 }
 
 .task-checkbox.checked::after {
-    content: '✓';
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
+    display: none;
 }
 
 .task-title {
-    flex: 1;
     font-size: 0.95rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     word-break: break-word;
+    cursor: pointer;
+    color: #f0f0f0;
+}
+
+.task-timestamp {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin-top: 2px;
+}
+
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.priority-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #fff;
+    white-space: nowrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin-right: 4px;
+}
+
+.priority-p0 {
+    background: #4a90d9;
+}
+
+.priority-p1 {
+    background: #1a56a0;
+}
+
+.priority-p2 {
+    background: #7ab3e8;
+}
+
+.task-edit {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.task-edit:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+}
+
+.task-edit-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #0078d4;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f0f0f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    width: 100%;
+}
+
+.task-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-notes-panel {
+    margin-top: 8px;
+}
+
+.task-notes {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #2a2a2a;
+    color: #f0f0f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.85rem;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.task-notes:focus {
+    border-color: #0078d4;
+}
+
+.task-notes::placeholder {
+    color: #aaa;
 }
 
 .task-item.completed .task-title {
     text-decoration: line-through;
-    color: rgba(255, 255, 255, 0.4);
+    color: #888;
 }
 
 .task-delete {
@@ -213,29 +312,128 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-}
-
-.task-item:hover .task-delete {
-    opacity: 1;
 }
 
 .task-delete:hover {
-    background: rgba(244, 67, 54, 0.2);
+    background: rgba(244, 67, 54, 0.1);
     color: #f44336;
 }
 
 .empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: rgba(255, 255, 255, 0.4);
+    color: #888;
     font-size: 0.9rem;
 }
 
-.signed-out-msg {
-    text-align: center;
-    padding: 40px 20px;
-    color: rgba(255, 255, 255, 0.4);
+.completed-section {
+    margin-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+}
+
+.completed-section summary {
+    cursor: pointer;
+    color: #aaa;
+    font-family: 'DM Serif Text', Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+    font-style: normal;
+    margin-bottom: 12px;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.completed-section summary::-webkit-details-marker {
+    display: none;
+}
+
+.completed-section summary::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    background-color: #aaa;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.21967 8.46967C4.51256 8.17678 4.98744 8.17678 5.28033 8.46967L12 15.1893L18.7197 8.46967C19.0126 8.17678 19.4874 8.17678 19.7803 8.46967C20.0732 8.76256 20.0732 9.23744 19.7803 9.53033L12.5303 16.7803C12.2374 17.0732 11.7626 17.0732 11.4697 16.7803L4.21967 9.53033C3.92678 9.23744 3.92678 8.76256 4.21967 8.46967Z' fill='%23212121'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.21967 8.46967C4.51256 8.17678 4.98744 8.17678 5.28033 8.46967L12 15.1893L18.7197 8.46967C19.0126 8.17678 19.4874 8.17678 19.7803 8.46967C20.0732 8.76256 20.0732 9.23744 19.7803 9.53033L12.5303 16.7803C12.2374 17.0732 11.7626 17.0732 11.4697 16.7803L4.21967 9.53033C3.92678 9.23744 3.92678 8.76256 4.21967 8.46967Z' fill='%23212121'/%3E%3C/svg%3E");
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    transition: transform 0.2s;
+}
+
+.completed-section[open] summary::before {
+    transform: rotate(0deg);
+}
+
+.completed-section:not([open]) summary::before {
+    transform: rotate(-90deg);
+}
+
+.completed-section summary:hover {
+    color: #ddd;
+}
+
+.task-item-completed {
+    opacity: 0.5;
+}
+
+.task-item-completed .task-title {
+    text-decoration: line-through;
+    color: #888;
+}
+
+.prefix-section {
+    margin-top: 16px;
+}
+
+.prefix-section > summary {
+    font-family: 'DM Serif Text', Georgia, serif;
+    font-size: 1.3rem;
+    font-style: normal;
+    color: #ddd;
+    padding: 8px 4px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prefix-section > summary::-webkit-details-marker {
+    display: none;
+}
+
+.prefix-section > summary::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    background-color: rgba(255, 255, 255, 0.3);
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.21967 8.46967C4.51256 8.17678 4.98744 8.17678 5.28033 8.46967L12 15.1893L18.7197 8.46967C19.0126 8.17678 19.4874 8.17678 19.7803 8.46967C20.0732 8.76256 20.0732 9.23744 19.7803 9.53033L12.5303 16.7803C12.2374 17.0732 11.7626 17.0732 11.4697 16.7803L4.21967 9.53033C3.92678 9.23744 3.92678 8.76256 4.21967 8.46967Z' fill='%23212121'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.21967 8.46967C4.51256 8.17678 4.98744 8.17678 5.28033 8.46967L12 15.1893L18.7197 8.46967C19.0126 8.17678 19.4874 8.17678 19.7803 8.46967C20.0732 8.76256 20.0732 9.23744 19.7803 9.53033L12.5303 16.7803C12.2374 17.0732 11.7626 17.0732 11.4697 16.7803L4.21967 9.53033C3.92678 9.23744 3.92678 8.76256 4.21967 8.46967Z' fill='%23212121'/%3E%3C/svg%3E");
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    transition: transform 0.2s;
+}
+
+.prefix-section[open] > summary::before {
+    transform: rotate(0deg);
+}
+
+.prefix-section:not([open]) > summary::before {
+    transform: rotate(-90deg);
+}
+
+.prefix-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .hidden {
@@ -252,3 +450,5 @@ h1 {
     0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.6); }
     100% { box-shadow: 0 0 0 20px rgba(76, 175, 80, 0); }
 }
+
+

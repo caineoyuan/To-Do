@@ -1,210 +1,120 @@
 // ============================================================
-// CONFIGURATION — Replace with your Azure AD app registration
-// ============================================================
-const msalConfig = {
-    auth: {
-        clientId: "YOUR_CLIENT_ID_HERE", // <-- Replace this
-        authority: "https://login.microsoftonline.com/common",
-        redirectUri: window.location.origin + window.location.pathname,
-    },
-    cache: {
-        cacheLocation: "localStorage",
-        storeAuthStateInCookie: false,
-    },
-};
-
-const graphScopes = ["Tasks.ReadWrite"];
-
-// ============================================================
-// MSAL Instance
-// ============================================================
-const msalInstance = new msal.PublicClientApplication(msalConfig);
-
-// ============================================================
 // DOM Elements
 // ============================================================
-const signInBtn = document.getElementById("sign-in-btn");
-const signOutBtn = document.getElementById("sign-out-btn");
-const appContent = document.getElementById("app-content");
-const signedOutMsg = document.getElementById("signed-out-msg");
 const addTaskForm = document.getElementById("add-task-form");
 const taskInput = document.getElementById("task-input");
 const taskList = document.getElementById("task-list");
+const completedSection = document.getElementById("completed-section");
+const completedList = document.getElementById("completed-list");
 
 // ============================================================
-// State
+// API
 // ============================================================
-let currentAccount = null;
-let taskListId = null; // Microsoft To-Do default list ID
+const API_BASE = "/api";
+
+async function fetchTasks() {
+    const res = await fetch(`${API_BASE}/tasks`);
+    return res.json();
+}
+
+async function apiAddTask(title) {
+    const res = await fetch(`${API_BASE}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+    });
+    return res.json();
+}
+
+async function apiUpdateTask(id, updates) {
+    const res = await fetch(`${API_BASE}/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+    });
+    return res.json();
+}
+
+async function apiCompleteTask(id) {
+    const res = await fetch(`${API_BASE}/tasks/${id}/complete`, { method: "POST" });
+    return res.json();
+}
+
+async function apiUncompleteTask(id) {
+    const res = await fetch(`${API_BASE}/tasks/${id}/uncomplete`, { method: "POST" });
+    return res.json();
+}
+
+async function apiDeleteTask(id) {
+    await fetch(`${API_BASE}/tasks/${id}`, { method: "DELETE" });
+}
 
 // ============================================================
-// Audio — Satisfying Ding 🔔
+// Audio — Bell Ding 🔔
 // ============================================================
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
+const dingAudio = new Audio("floraphonic-servant-bell-ring-2-211683.mp3");
 
 function playDing() {
-    if (!audioCtx) {
-        audioCtx = new AudioContext();
-    }
-
-    const now = audioCtx.currentTime;
-
-    // Primary tone — bright bell
-    const osc1 = audioCtx.createOscillator();
-    const gain1 = audioCtx.createGain();
-    osc1.type = "sine";
-    osc1.frequency.setValueAtTime(880, now); // A5
-    osc1.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
-    gain1.gain.setValueAtTime(0.4, now);
-    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-    osc1.connect(gain1);
-    gain1.connect(audioCtx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.6);
-
-    // Harmonic overtone
-    const osc2 = audioCtx.createOscillator();
-    const gain2 = audioCtx.createGain();
-    osc2.type = "sine";
-    osc2.frequency.setValueAtTime(1320, now + 0.05); // E6
-    gain2.gain.setValueAtTime(0.2, now + 0.05);
-    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-    osc2.connect(gain2);
-    gain2.connect(audioCtx.destination);
-    osc2.start(now + 0.05);
-    osc2.stop(now + 0.5);
-
-    // High shimmer
-    const osc3 = audioCtx.createOscillator();
-    const gain3 = audioCtx.createGain();
-    osc3.type = "sine";
-    osc3.frequency.setValueAtTime(2640, now + 0.08); // E7
-    gain3.gain.setValueAtTime(0.08, now + 0.08);
-    gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-    osc3.connect(gain3);
-    gain3.connect(audioCtx.destination);
-    osc3.start(now + 0.08);
-    osc3.stop(now + 0.35);
+    dingAudio.currentTime = 0;
+    dingAudio.play();
 }
 
 // ============================================================
-// Auth
+// Prefix Parsing
 // ============================================================
-async function signIn() {
-    try {
-        const response = await msalInstance.loginPopup({ scopes: graphScopes });
-        currentAccount = response.account;
-        updateUI(true);
-        await loadTasks();
-    } catch (error) {
-        console.error("Sign-in error:", error);
+function parsePrefix(title) {
+    const match = title.match(/^([A-Z0-9]+)\s*-\s*/);
+    if (match) {
+        return {
+            prefix: match[1],
+            displayTitle: title.slice(match[0].length),
+        };
     }
-}
-
-function signOut() {
-    msalInstance.logoutPopup();
-    currentAccount = null;
-    updateUI(false);
-}
-
-async function getAccessToken() {
-    if (!currentAccount) return null;
-    try {
-        const response = await msalInstance.acquireTokenSilent({
-            scopes: graphScopes,
-            account: currentAccount,
-        });
-        return response.accessToken;
-    } catch (error) {
-        // Fallback to interactive
-        const response = await msalInstance.acquireTokenPopup({
-            scopes: graphScopes,
-        });
-        return response.accessToken;
-    }
+    return { prefix: null, displayTitle: title };
 }
 
 // ============================================================
-// Graph API Helpers
+// Priority Parsing
 // ============================================================
-async function graphRequest(url, method = "GET", body = null) {
-    const token = await getAccessToken();
-    if (!token) return null;
-
-    const options = {
-        method,
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-    };
-    if (body) options.body = JSON.stringify(body);
-
-    const response = await fetch(`https://graph.microsoft.com/v1.0${url}`, options);
-    if (response.status === 204) return null;
-    return response.json();
-}
-
-async function getDefaultTaskList() {
-    const result = await graphRequest("/me/todo/lists");
-    if (result && result.value && result.value.length > 0) {
-        // Use the default "Tasks" list
-        const defaultList = result.value.find(l => l.wellknownListName === "defaultList") || result.value[0];
-        return defaultList.id;
+function parsePriority(title) {
+    const match = title.match(/\s*-\s*(P[012])\s*$/i);
+    if (match) {
+        return {
+            priority: match[1].toUpperCase(),
+            titleWithoutPriority: title.slice(0, -match[0].length),
+        };
     }
-    return null;
+    return { priority: null, titleWithoutPriority: title };
 }
 
 // ============================================================
 // Task Operations
 // ============================================================
 async function loadTasks() {
-    taskListId = await getDefaultTaskList();
-    if (!taskListId) {
-        taskList.innerHTML = '<p class="empty-state">Could not load task list.</p>';
-        return;
-    }
-
-    const result = await graphRequest(
-        `/me/todo/lists/${taskListId}/tasks?$filter=status ne 'completed'&$orderby=createdDateTime desc&$top=50`
-    );
-
-    if (result && result.value) {
-        renderTasks(result.value);
-    } else {
-        taskList.innerHTML = '<p class="empty-state">No tasks yet. Add one above!</p>';
-    }
+    const data = await fetchTasks();
+    renderTasks(data.tasks);
+    renderCompletedTasks(data.completed);
 }
 
 async function addTask(title) {
-    if (!taskListId) return;
-
-    const result = await graphRequest(`/me/todo/lists/${taskListId}/tasks`, "POST", {
-        title: title,
-        isReminderOn: false,
-    });
-
-    if (result) {
-        await loadTasks();
-    }
+    await apiAddTask(title);
+    await loadTasks();
 }
 
-async function completeTask(taskId, element) {
-    // Play ding and animate
+async function updateTaskNotes(taskId, notes) {
+    await apiUpdateTask(taskId, { notes });
+}
+
+function completeTask(taskId, element) {
     playDing();
 
     const checkbox = element.querySelector(".task-checkbox");
     checkbox.classList.add("checked", "ding");
     element.classList.add("completed");
 
-    // Wait for animation then update API
     setTimeout(async () => {
-        await graphRequest(`/me/todo/lists/${taskListId}/tasks/${taskId}`, "PATCH", {
-            status: "completed",
-        });
+        await apiCompleteTask(taskId);
 
-        // Remove from list after a moment
         setTimeout(() => {
             element.style.height = element.offsetHeight + "px";
             element.style.overflow = "hidden";
@@ -215,40 +125,104 @@ async function completeTask(taskId, element) {
                 element.style.margin = "0";
                 element.style.opacity = "0";
             });
-            setTimeout(() => element.remove(), 300);
+            setTimeout(() => {
+                element.remove();
+                loadTasks();
+            }, 300);
         }, 400);
     }, 200);
 }
 
-async function deleteTask(taskId, element) {
+function deleteTask(taskId, element) {
     element.style.transition = "all 0.3s ease";
     element.style.opacity = "0";
     element.style.transform = "translateX(20px)";
 
     setTimeout(async () => {
-        await graphRequest(`/me/todo/lists/${taskListId}/tasks/${taskId}`, "DELETE");
-        element.remove();
+        await apiDeleteTask(taskId);
+        loadTasks();
     }, 300);
 }
 
 // ============================================================
 // Render
 // ============================================================
-function renderTasks(tasks) {
-    if (tasks.length === 0) {
-        taskList.innerHTML = '<p class="empty-state">All done! 🎉</p>';
-        return;
-    }
+function createTaskElement(task, isCompleted) {
+    const { priority, titleWithoutPriority } = parsePriority(task.title);
+    const displayTitle = titleWithoutPriority;
 
-    taskList.innerHTML = "";
-    tasks.forEach((task) => {
-        const item = document.createElement("div");
-        item.className = "task-item";
-        item.innerHTML = `
-            <div class="task-checkbox" data-id="${task.id}"></div>
-            <span class="task-title">${escapeHtml(task.title)}</span>
+    const item = document.createElement("div");
+    item.className = "task-item" + (isCompleted ? " task-item-completed" : "");
+
+    const priorityTag = priority
+        ? `<span class="priority-tag priority-${priority.toLowerCase()}">${priority}</span>`
+        : "";
+
+    const timestamp = isCompleted && task.completedAt
+        ? `Completed ${formatTimestamp(task.completedAt)}`
+        : task.createdAt
+            ? `Created ${formatTimestamp(task.createdAt)}`
+            : "";
+
+    item.innerHTML = `
+        <div class="task-checkbox${isCompleted ? " checked" : ""}" data-id="${task.id}"></div>
+        <div class="task-content">
+            <span class="task-title">${escapeHtml(displayTitle)}</span>
+            ${timestamp ? `<span class="task-timestamp">${timestamp}</span>` : ""}
+            <div class="task-notes-panel hidden">
+                <textarea class="task-notes" placeholder="Add notes...">${escapeHtml(task.notes || "")}</textarea>
+            </div>
+        </div>
+        <div class="task-actions">
+            ${priorityTag}
+            <button class="task-edit" title="Edit">✎</button>
             <button class="task-delete" data-id="${task.id}">✕</button>
-        `;
+        </div>
+    `;
+
+    const titleEl = item.querySelector(".task-title");
+    const notesPanel = item.querySelector(".task-notes-panel");
+    const notesArea = item.querySelector(".task-notes");
+    const editBtn = item.querySelector(".task-edit");
+
+    titleEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        notesPanel.classList.toggle("hidden");
+        if (!notesPanel.classList.contains("hidden")) {
+            notesArea.focus();
+        }
+    });
+
+    editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "task-edit-input";
+        input.value = task.title;
+        titleEl.replaceWith(input);
+        input.focus();
+        input.select();
+
+        function saveEdit() {
+            const newTitle = input.value.trim();
+            if (newTitle && newTitle !== task.title) {
+                apiUpdateTask(task.id, { title: newTitle }).then(() => loadTasks());
+                return;
+            }
+            loadTasks();
+        }
+
+        input.addEventListener("blur", saveEdit);
+        input.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") { input.blur(); }
+            if (ev.key === "Escape") { loadTasks(); }
+        });
+    });
+
+    if (!isCompleted) {
+        notesArea.addEventListener("input", () => {
+            updateTaskNotes(task.id, notesArea.value);
+        });
 
         item.querySelector(".task-checkbox").addEventListener("click", () => {
             completeTask(task.id, item);
@@ -257,8 +231,72 @@ function renderTasks(tasks) {
         item.querySelector(".task-delete").addEventListener("click", () => {
             deleteTask(task.id, item);
         });
+    } else {
+        notesArea.readOnly = true;
 
-        taskList.appendChild(item);
+        item.querySelector(".task-checkbox").addEventListener("click", async () => {
+            await apiUncompleteTask(task.id);
+            loadTasks();
+        });
+
+        item.querySelector(".task-delete").addEventListener("click", () => {
+            item.style.transition = "all 0.3s ease";
+            item.style.opacity = "0";
+            item.style.transform = "translateX(20px)";
+            setTimeout(async () => {
+                await apiDeleteTask(task.id);
+                loadTasks();
+            }, 300);
+        });
+    }
+
+    return item;
+}
+
+function renderTasks(tasks) {
+    taskList.innerHTML = "";
+
+    if (tasks.length === 0) {
+        taskList.innerHTML = '<p class="empty-state">All done! 🎉</p>';
+        return;
+    }
+
+    // Group tasks by prefix
+    const groups = {};
+    const ungrouped = [];
+
+    tasks.forEach((task) => {
+        const { prefix } = parsePrefix(task.title);
+        if (prefix) {
+            if (!groups[prefix]) groups[prefix] = [];
+            groups[prefix].push(task);
+        } else {
+            ungrouped.push(task);
+        }
+    });
+
+    // Render ungrouped tasks first
+    ungrouped.forEach((task) => {
+        taskList.appendChild(createTaskElement(task, false));
+    });
+
+    // Render each prefix group as collapsible
+    Object.keys(groups).sort().forEach((prefix) => {
+        const section = document.createElement("details");
+        section.className = "prefix-section";
+        section.open = true;
+
+        const summary = document.createElement("summary");
+        summary.textContent = prefix;
+        section.appendChild(summary);
+
+        const list = document.createElement("div");
+        list.className = "prefix-task-list";
+        groups[prefix].forEach((task) => {
+            list.appendChild(createTaskElement(task, false));
+        });
+        section.appendChild(list);
+        taskList.appendChild(section);
     });
 }
 
@@ -268,53 +306,47 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ============================================================
-// UI State
-// ============================================================
-function updateUI(signedIn) {
-    if (signedIn) {
-        signInBtn.classList.add("hidden");
-        signOutBtn.classList.remove("hidden");
-        appContent.classList.remove("hidden");
-        signedOutMsg.classList.add("hidden");
-    } else {
-        signInBtn.classList.remove("hidden");
-        signOutBtn.classList.add("hidden");
-        appContent.classList.add("hidden");
-        signedOutMsg.classList.remove("hidden");
-        taskList.innerHTML = "";
+function formatTimestamp(isoString) {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+}
+
+function renderCompletedTasks(completed) {
+    if (!completed || completed.length === 0) {
+        completedSection.classList.add("hidden");
+        return;
     }
+
+    completedSection.classList.remove("hidden");
+    completedList.innerHTML = "";
+    completed.forEach((task) => {
+        completedList.appendChild(createTaskElement(task, true));
+    });
 }
 
 // ============================================================
 // Event Listeners
 // ============================================================
-signInBtn.addEventListener("click", signIn);
-signOutBtn.addEventListener("click", signOut);
-
-addTaskForm.addEventListener("submit", async (e) => {
+addTaskForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const title = taskInput.value.trim();
     if (!title) return;
     taskInput.value = "";
-    await addTask(title);
+    addTask(title);
 });
 
 // ============================================================
-// Init — Check for existing session
+// Init
 // ============================================================
-(async () => {
-    await msalInstance.initialize();
-
-    // Handle redirect response (if using redirect flow)
-    await msalInstance.handleRedirectPromise();
-
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) {
-        currentAccount = accounts[0];
-        updateUI(true);
-        await loadTasks();
-    } else {
-        updateUI(false);
-    }
-})();
+loadTasks();
