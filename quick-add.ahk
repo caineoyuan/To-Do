@@ -15,13 +15,8 @@ TraySetIcon(A_ScriptDir . "\favicon.ico")
     g.MarginY := 12
     g.SetFont("s11 cffffff", "Segoe UI")
 
-    ; Set window icon
+    ; Set taskbar icon (must be done after Show, so defer)
     icoPath := A_ScriptDir . "\favicon.ico"
-    try {
-        hIcon := DllCall("LoadImage", "Ptr", 0, "Str", icoPath, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0x10, "Ptr")
-        DllCall("SendMessage", "Ptr", g.Hwnd, "UInt", 0x80, "Ptr", 0, "Ptr", hIcon)
-        DllCall("SendMessage", "Ptr", g.Hwnd, "UInt", 0x80, "Ptr", 1, "Ptr", hIcon)
-    }
     
     ed := g.AddEdit("w320 h26 Background1e1e1e cffffff -E0x200", "")
     ed.Opt("+0x1500")  ; EM_SETCUEBANNER style
@@ -60,6 +55,14 @@ TraySetIcon(A_ScriptDir . "\favicon.ico")
     winX := mx - 180
     winY := my - 25
     g.Show("x" . winX . " y" . winY)
+    
+    ; Set taskbar icon
+    try {
+        hIcon := DllCall("LoadImage", "Ptr", 0, "Str", icoPath, "UInt", 1, "Int", 16, "Int", 16, "UInt", 0x10, "Ptr")
+        hIconBig := DllCall("LoadImage", "Ptr", 0, "Str", icoPath, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0x10, "Ptr")
+        DllCall("SendMessage", "Ptr", g.Hwnd, "UInt", 0x80, "Ptr", 0, "Ptr", hIcon)
+        DllCall("SendMessage", "Ptr", g.Hwnd, "UInt", 0x80, "Ptr", 1, "Ptr", hIconBig)
+    }
     
     ; Apply rounded corners to window (Windows 11)
     try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", g.Hwnd, "Int", 33, "Int*", 2, "Int", 4)
