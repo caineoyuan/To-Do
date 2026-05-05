@@ -24,6 +24,7 @@ function requireAuth(req, res, next) {
     if (req.session.authenticated) return next();
     if (API_KEY && req.headers["x-api-key"] === API_KEY) return next();
     if (req.path === "/login" || req.path === "/api/login") return next();
+    if (req.path === "/quick-add.html" || req.path === "/favicon.svg") return next();
     if (req.path.startsWith("/api/")) return res.status(401).json({ error: "unauthorized" });
     return res.sendFile(path.join(__dirname, "login.html"));
 }

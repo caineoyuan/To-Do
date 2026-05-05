@@ -11,7 +11,8 @@
     winX := mx - 180
     winY := my - 30
     
-    ; Open a small Chrome window (app mode, no toolbar)
+    ; Open a small Edge window (app mode, no toolbar)
     url := "https://to-do-neo.up.railway.app/quick-add.html"
-    Run('chrome.exe --app="' . url . '" --window-size=380,60 --window-position=' . winX . ',' . winY)
+    edge := "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+    Run('"' . edge . '" --app="' . url . '" --window-size=380,60 --window-position=' . winX . ',' . winY)
 }
