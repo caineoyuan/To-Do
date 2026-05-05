@@ -1,13 +1,47 @@
 const express = require("express");
 const cors = require("cors");
+const session = require("express-session");
 const fs = require("fs");
 const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const APP_PASSWORD = process.env.APP_PASSWORD || "todo";
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(session({
+    secret: process.env.SESSION_SECRET || "local-dev-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
+}));
+
+// Auth middleware — skip for login routes and static login page
+function requireAuth(req, res, next) {
+    if (req.session.authenticated) return next();
+    if (req.path === "/login" || req.path === "/api/login") return next();
+    if (req.path.startsWith("/api/")) return res.status(401).json({ error: "unauthorized" });
+    // Serve login page for non-API requests
+    return res.sendFile(path.join(__dirname, "login.html"));
+}
+
+app.post("/api/login", (req, res) => {
+    const { password } = req.body;
+    if (password === APP_PASSWORD) {
+        req.session.authenticated = true;
+        return res.json({ success: true });
+    }
+    res.status(401).json({ error: "wrong password" });
+});
+
+app.post("/api/logout", (req, res) => {
+    req.session.destroy();
+    res.json({ success: true });
+});
+
+app.use(requireAuth);
 app.use(express.static(__dirname));
 
 // ============================================================
