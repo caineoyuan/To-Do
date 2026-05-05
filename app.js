@@ -317,7 +317,7 @@ function renderTasks(tasks) {
         section.open = true;
 
         const summary = document.createElement("summary");
-        summary.textContent = `${prefix} (${groups[prefix].length})`;
+        summary.innerHTML = `<span class="section-title">${prefix}</span><span class="section-count">${groups[prefix].length}</span>`;
         section.appendChild(summary);
 
         const list = document.createElement("div");
