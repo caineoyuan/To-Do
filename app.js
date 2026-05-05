@@ -271,6 +271,10 @@ function renderTasks(tasks) {
 
     const sorted = sortByPriority(tasks);
 
+    // Update total count in header
+    const totalCountEl = document.getElementById("total-count");
+    if (totalCountEl) totalCountEl.textContent = sorted.length;
+
     if (sorted.length === 0) {
         taskList.innerHTML = '<p class="empty-state">All done! 🎉</p>';
         return;
@@ -353,12 +357,15 @@ function formatTimestamp(isoString) {
 }
 
 function renderCompletedTasks(completed) {
+    const completedCount = document.getElementById("completed-count");
     if (!completed || completed.length === 0) {
         completedSection.classList.add("hidden");
+        if (completedCount) completedCount.textContent = "";
         return;
     }
 
     completedSection.classList.remove("hidden");
+    if (completedCount) completedCount.textContent = completed.length;
     completedList.innerHTML = "";
     completed.forEach((task) => {
         completedList.appendChild(createTaskElement(task, true));
