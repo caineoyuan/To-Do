@@ -7,6 +7,7 @@
 TraySetIcon(A_ScriptDir . "\favicon.ico")
 
 ^+x:: {
+    CoordMode("Mouse", "Screen")
     MouseGetPos(&mx, &my)
     
     g := Gui("+AlwaysOnTop -Caption +Border")
