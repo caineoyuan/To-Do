@@ -253,10 +253,25 @@ function createTaskElement(task, isCompleted) {
     return item;
 }
 
+function sortByPriority(tasks) {
+    const priorityOrder = { P0: 0, P1: 1, P2: 2 };
+    return [...tasks].sort((a, b) => {
+        const pa = parsePriority(a.title).priority;
+        const pb = parsePriority(b.title).priority;
+        const oa = pa ? priorityOrder[pa] : 3;
+        const ob = pb ? priorityOrder[pb] : 3;
+        if (oa !== ob) return oa - ob;
+        // Within same priority, oldest first (most recent last)
+        return new Date(a.createdAt) - new Date(b.createdAt);
+    });
+}
+
 function renderTasks(tasks) {
     taskList.innerHTML = "";
 
-    if (tasks.length === 0) {
+    const sorted = sortByPriority(tasks);
+
+    if (sorted.length === 0) {
         taskList.innerHTML = '<p class="empty-state">All done! 🎉</p>';
         return;
     }
@@ -265,7 +280,7 @@ function renderTasks(tasks) {
     const groups = {};
     const ungrouped = [];
 
-    tasks.forEach((task) => {
+    sorted.forEach((task) => {
         const { prefix } = parsePrefix(task.title);
         if (prefix) {
             if (!groups[prefix]) groups[prefix] = [];
