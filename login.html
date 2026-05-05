@@ -94,7 +94,11 @@
         <form id="login-form">
             <div class="password-wrapper">
                 <input type="password" id="password" placeholder="Password" autofocus />
-                <button type="button" class="peek-btn" id="peek-btn" tabindex="-1">👁</button>
+                <button type="button" class="peek-btn" id="peek-btn" tabindex="-1">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 9.005a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 1.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM12 5.5c4.613 0 8.596 3.15 9.701 7.564a.75.75 0 1 1-1.455.365C19.227 9.757 15.86 7 12 7c-3.86 0-7.227 2.757-8.246 6.43a.75.75 0 0 1-1.455-.366C3.404 8.65 7.387 5.5 12 5.5Z" fill="currentColor"/>
+                    </svg>
+                </button>
             </div>
             <button type="submit">Sign in</button>
         </form>
