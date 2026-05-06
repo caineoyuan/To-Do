@@ -21,9 +21,9 @@ body {
     display: flex;
     gap: 24px;
     width: 100%;
+    max-width: 1100px;
     align-items: flex-start;
     justify-content: center;
-    position: relative;
 }
 
 .app {
@@ -37,34 +37,19 @@ body {
 }
 
 .panel-tasks {
-    flex: 0 0 500px;
+    flex: 1 1 500px;
+    max-width: 500px;
 }
 
 .panel-targets {
-    flex: 0 0 500px;
-    position: absolute;
-    right: calc(50% + 274px);
+    flex: 1 1 500px;
+    max-width: 500px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
     .app-layout {
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: center;
-        overflow-x: auto;
-    }
-
-    .panel-targets {
-        position: static;
-        flex: 0 0 auto;
-        max-width: 400px;
-        min-width: 300px;
-    }
-
-    .panel-tasks {
-        flex: 0 0 auto;
-        max-width: 500px;
-        min-width: 350px;
+        flex-direction: column;
+        align-items: center;
     }
 }
 
