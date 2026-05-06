@@ -635,7 +635,7 @@ function createTargetElement(target, isCompleted) {
         <div class="task-checkbox${isCompleted ? " checked" : ""}" data-id="${target.id}"></div>
         <div class="task-content">
             <span class="task-title">${targetIdBadge}${escapeHtml(displayTitle)}</span>
-            <div class="target-progress-bar hidden"><div class="target-progress-fill"></div></div>
+            <div class="target-progress-wrapper hidden"><div class="target-progress-bar"><div class="target-progress-fill"></div></div><span class="target-progress-pct">0%</span></div>
             ${timestamp ? `<span class="task-timestamp">${timestamp}</span>` : ""}
             <div class="target-children hidden"></div>
             <div class="task-notes-panel hidden">
@@ -695,8 +695,9 @@ function createTargetElement(target, isCompleted) {
     renderNoteLinks(target.notes || "");
 
     // Load and display progress bar if target has a number
-    const progressBar = item.querySelector(".target-progress-bar");
+    const progressWrapper = item.querySelector(".target-progress-wrapper");
     const progressFill = item.querySelector(".target-progress-fill");
+    const progressPct = item.querySelector(".target-progress-pct");
     const childrenPanel = item.querySelector(".target-children");
 
     if (target.targetNumber && !isCompleted) {
@@ -707,8 +708,9 @@ function createTargetElement(target, isCompleted) {
                 const total = data.active.length + data.completed.length;
                 if (total > 0) {
                     const pct = Math.round((data.completed.length / total) * 100);
-                    progressBar.classList.remove("hidden");
+                    progressWrapper.classList.remove("hidden");
                     progressFill.style.width = pct + "%";
+                    progressPct.textContent = pct + "%";
                     progressFill.title = `${data.completed.length}/${total} tasks completed`;
                 }
             }).catch(() => {});

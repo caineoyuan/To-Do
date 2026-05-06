@@ -553,12 +553,18 @@ h1 {
 }
 
 /* Target progress bar */
+.target-progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
 .target-progress-bar {
-    width: 100%;
+    flex: 1;
     height: 3px;
     background: rgba(255, 255, 255, 0.15);
     border-radius: 2px;
-    margin-top: 4px;
     overflow: hidden;
 }
 
@@ -567,6 +573,13 @@ h1 {
     background: #4caf50;
     border-radius: 2px;
     transition: width 0.3s ease;
+}
+
+.target-progress-pct {
+    font-size: 0.6rem;
+    color: #888;
+    min-width: 28px;
+    text-align: right;
 }
 
 /* Target children panel */
