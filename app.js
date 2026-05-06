@@ -24,11 +24,13 @@ async function fetchTasks() {
     return res.json();
 }
 
-async function apiAddTask(title) {
+async function apiAddTask(title, targetNumber) {
+    const body = { title };
+    if (targetNumber) body.targetNumber = targetNumber;
     const res = await fetch(`${API_BASE}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify(body),
     });
     return res.json();
 }
@@ -133,8 +135,38 @@ function parsePriority(title) {
 }
 
 // ============================================================
+// Target Number Suffix Parsing
+// ============================================================
+// Parse suffixes right-to-left: trailing - P[012] = priority, then trailing - \d+ = target number
+function parseSuffixes(title) {
+    let remaining = title;
+    let priority = null;
+    let targetNum = null;
+
+    // Check for priority suffix first (rightmost)
+    const pMatch = remaining.match(/\s*-\s*(P[012])\s*$/i);
+    if (pMatch) {
+        priority = pMatch[1].toUpperCase();
+        remaining = remaining.slice(0, -pMatch[0].length);
+    }
+
+    // Then check for target number suffix
+    const tMatch = remaining.match(/\s*-\s*(\d+)\s*$/);
+    if (tMatch) {
+        targetNum = parseInt(tMatch[1]);
+        remaining = remaining.slice(0, -tMatch[0].length);
+    }
+
+    return { priority, targetNumber: targetNum, cleanTitle: remaining };
+}
+
+// ============================================================
 // Task Operations
 // ============================================================
+
+// Global targets cache for lookups
+let allTargets = [];
+
 async function loadTasks() {
     const data = await fetchTasks();
     renderTasks(data.tasks);
@@ -142,7 +174,14 @@ async function loadTasks() {
 }
 
 async function addTask(title) {
-    await apiAddTask(title);
+    // Parse target number from suffix
+    const { targetNumber } = parseSuffixes(title);
+    // Only link if target exists
+    let validTargetNum = null;
+    if (targetNumber && allTargets.some(t => t.targetNumber === targetNumber)) {
+        validTargetNum = targetNumber;
+    }
+    await apiAddTask(title, validTargetNum);
     await loadTasks();
 }
 
@@ -193,14 +232,21 @@ function deleteTask(taskId, element) {
 // Render
 // ============================================================
 function createTaskElement(task, isCompleted) {
-    const { priority, titleWithoutPriority } = parsePriority(task.title);
-    const displayTitle = titleWithoutPriority;
+    const { priority, targetNumber, cleanTitle } = parseSuffixes(task.title);
+    const displayTitle = cleanTitle;
+
+    // Find parent target if task has a targetNumber
+    const parentTarget = task.targetNumber ? allTargets.find(t => t.targetNumber === task.targetNumber) : null;
 
     const item = document.createElement("div");
     item.className = "task-item" + (isCompleted ? " task-item-completed" : "");
 
     const priorityTag = priority
         ? `<span class="priority-tag priority-${priority.toLowerCase()}">${priority}</span>`
+        : "";
+
+    const parentBadge = parentTarget
+        ? `<span class="parent-target-badge" title="${escapeHtml(parentTarget.title)}">🎯 ${String(parentTarget.targetNumber).padStart(2, '0')}</span>`
         : "";
 
     const timestamp = isCompleted && task.completedAt
@@ -213,11 +259,13 @@ function createTaskElement(task, isCompleted) {
         <div class="task-checkbox${isCompleted ? " checked" : ""}" data-id="${task.id}"></div>
         <div class="task-content">
             <span class="task-title">${escapeHtml(displayTitle)}</span>
+            ${parentBadge}
             ${timestamp ? `<span class="task-timestamp">${timestamp}</span>` : ""}
             <div class="task-notes-panel hidden">
                 <div class="task-notes-links"></div>
                 <textarea class="task-notes" placeholder="Add notes...">${escapeHtml(task.notes || "")}</textarea>
             </div>
+            <div class="task-parent-detail hidden"></div>
         </div>
         <div class="task-actions">
             ${priorityTag}
@@ -272,6 +320,19 @@ function createTaskElement(task, isCompleted) {
     }
 
     renderNoteLinks(task.notes || "");
+
+    // Parent target badge click → show parent target info
+    const parentBadgeEl = item.querySelector(".parent-target-badge");
+    const parentDetail = item.querySelector(".task-parent-detail");
+    if (parentBadgeEl && parentTarget) {
+        parentBadgeEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            parentDetail.classList.toggle("hidden");
+            if (!parentDetail.classList.contains("hidden")) {
+                parentDetail.innerHTML = `<div class="parent-target-info">🎯 <strong>${escapeHtml(parentTarget.title)}</strong> <span class="parent-target-id">#${String(parentTarget.targetNumber).padStart(2, '0')}</span></div>`;
+            }
+        });
+    }
 
     titleEl.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -478,6 +539,7 @@ function parseMonthPrefix(title) {
 
 async function loadTargets() {
     const data = await fetchTargets();
+    allTargets = [...data.targets, ...data.completed];
     renderTargets(data.targets);
     renderCompletedTargets(data.completed);
 }
@@ -531,12 +593,17 @@ function createTargetElement(target, isCompleted) {
     const titleForDisplay = target.displayTitle || target.title;
     const { priority, titleWithoutPriority } = parsePriority(titleForDisplay);
     const displayTitle = titleWithoutPriority;
+    const targetNumStr = target.targetNumber ? String(target.targetNumber).padStart(2, '0') : '';
 
     const item = document.createElement("div");
-    item.className = "task-item" + (isCompleted ? " task-item-completed" : "");
+    item.className = "task-item target-item" + (isCompleted ? " task-item-completed" : "");
 
     const priorityTag = priority
         ? `<span class="priority-tag priority-${priority.toLowerCase()}">${priority}</span>`
+        : "";
+
+    const targetIdBadge = targetNumStr
+        ? `<span class="target-id-badge">${targetNumStr}</span>`
         : "";
 
     const timestamp = isCompleted && target.completedAt
@@ -548,8 +615,10 @@ function createTargetElement(target, isCompleted) {
     item.innerHTML = `
         <div class="task-checkbox${isCompleted ? " checked" : ""}" data-id="${target.id}"></div>
         <div class="task-content">
-            <span class="task-title">${escapeHtml(displayTitle)}</span>
+            <span class="task-title">${targetIdBadge}${escapeHtml(displayTitle)}</span>
+            <div class="target-progress-bar hidden"><div class="target-progress-fill"></div></div>
             ${timestamp ? `<span class="task-timestamp">${timestamp}</span>` : ""}
+            <div class="target-children hidden"></div>
             <div class="task-notes-panel hidden">
                 <div class="task-notes-links"></div>
                 <textarea class="task-notes" placeholder="Add notes...">${escapeHtml(target.notes || "")}</textarea>
@@ -606,14 +675,75 @@ function createTargetElement(target, isCompleted) {
 
     renderNoteLinks(target.notes || "");
 
-    titleEl.addEventListener("click", (e) => {
+    // Load and display progress bar if target has a number
+    const progressBar = item.querySelector(".target-progress-bar");
+    const progressFill = item.querySelector(".target-progress-fill");
+    const childrenPanel = item.querySelector(".target-children");
+
+    if (target.targetNumber && !isCompleted) {
+        // Compute progress from cached task data
+        fetch(`${API_BASE}/targets/${target.targetNumber}/tasks`)
+            .then(r => r.json())
+            .then(data => {
+                const total = data.active.length + data.completed.length;
+                if (total > 0) {
+                    const pct = Math.round((data.completed.length / total) * 100);
+                    progressBar.classList.remove("hidden");
+                    progressFill.style.width = pct + "%";
+                    progressFill.title = `${data.completed.length}/${total} tasks completed`;
+                }
+            }).catch(() => {});
+    }
+
+    titleEl.addEventListener("click", async (e) => {
         e.stopPropagation();
-        notesPanel.classList.toggle("hidden");
-        if (!notesPanel.classList.contains("hidden")) {
-            autoExpand();
-            notesArea.focus();
+        // Toggle children panel
+        if (target.targetNumber) {
+            childrenPanel.classList.toggle("hidden");
+            if (!childrenPanel.classList.contains("hidden")) {
+                childrenPanel.innerHTML = "<em>Loading...</em>";
+                try {
+                    const data = await fetch(`${API_BASE}/targets/${target.targetNumber}/tasks`).then(r => r.json());
+                    childrenPanel.innerHTML = "";
+                    if (data.active.length === 0 && data.completed.length === 0) {
+                        childrenPanel.innerHTML = '<span class="empty-state" style="font-size:0.8rem">No linked tasks</span>';
+                    } else {
+                        data.active.forEach(t => {
+                            const el = document.createElement("div");
+                            el.className = "child-task-item";
+                            el.innerHTML = `<span class="child-task-dot">○</span> ${escapeHtml(parseSuffixes(t.title).cleanTitle)}`;
+                            childrenPanel.appendChild(el);
+                        });
+                        data.completed.forEach(t => {
+                            const el = document.createElement("div");
+                            el.className = "child-task-item child-task-done";
+                            el.innerHTML = `<span class="child-task-dot">●</span> ${escapeHtml(parseSuffixes(t.title).cleanTitle)}`;
+                            childrenPanel.appendChild(el);
+                        });
+                    }
+                } catch { childrenPanel.innerHTML = "<em>Error loading tasks</em>"; }
+            }
+        } else {
+            notesPanel.classList.toggle("hidden");
+            if (!notesPanel.classList.contains("hidden")) {
+                autoExpand();
+                notesArea.focus();
+            }
         }
     });
+
+    // Right-click or long-press for notes on targets with children
+    if (target.targetNumber) {
+        item.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            notesPanel.classList.toggle("hidden");
+            if (!notesPanel.classList.contains("hidden")) {
+                autoExpand();
+                notesArea.focus();
+            }
+        });
+    }
 
     editBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -815,5 +945,5 @@ addTargetForm.addEventListener("submit", (e) => {
 // ============================================================
 // Init
 // ============================================================
-loadTasks();
-loadTargets();
+// Load targets first so allTargets is available for task rendering
+loadTargets().then(() => loadTasks());

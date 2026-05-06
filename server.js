@@ -81,6 +81,7 @@ if (process.env.DATABASE_URL) {
                     title TEXT NOT NULL,
                     notes TEXT DEFAULT '',
                     completed BOOLEAN DEFAULT FALSE,
+                    target_number INTEGER,
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     completed_at TIMESTAMPTZ
                 )
@@ -90,20 +91,24 @@ if (process.env.DATABASE_URL) {
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
                     notes TEXT DEFAULT '',
+                    target_number INTEGER UNIQUE,
                     completed BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     completed_at TIMESTAMPTZ
                 )
             `);
+            // Add columns if they don't exist (for existing deployments)
+            await pool.query(`ALTER TABLE targets ADD COLUMN IF NOT EXISTS target_number INTEGER UNIQUE`);
+            await pool.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS target_number INTEGER`);
         },
         async getAll() {
             const active = await pool.query("SELECT * FROM tasks WHERE completed = FALSE ORDER BY created_at DESC");
             const completed = await pool.query("SELECT * FROM tasks WHERE completed = TRUE ORDER BY completed_at DESC");
             return { tasks: active.rows.map(rowToTask), completed: completed.rows.map(rowToTask) };
         },
-        async create(id, title, notes) {
+        async create(id, title, notes, targetNumber) {
             const result = await pool.query(
-                "INSERT INTO tasks (id, title, notes) VALUES ($1, $2, $3) RETURNING *", [id, title, notes]
+                "INSERT INTO tasks (id, title, notes, target_number) VALUES ($1, $2, $3, $4) RETURNING *", [id, title, notes, targetNumber || null]
             );
             return rowToTask(result.rows[0]);
         },
@@ -111,6 +116,7 @@ if (process.env.DATABASE_URL) {
             const sets = []; const values = []; let idx = 1;
             if (fields.title !== undefined) { sets.push(`title = $${idx++}`); values.push(fields.title); }
             if (fields.notes !== undefined) { sets.push(`notes = $${idx++}`); values.push(fields.notes); }
+            if (fields.targetNumber !== undefined) { sets.push(`target_number = $${idx++}`); values.push(fields.targetNumber); }
             if (sets.length === 0) return null;
             values.push(id);
             const result = await pool.query(`UPDATE tasks SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`, values);
@@ -132,13 +138,16 @@ if (process.env.DATABASE_URL) {
         async getAllTargets() {
             const active = await pool.query("SELECT * FROM targets WHERE completed = FALSE ORDER BY created_at DESC");
             const completed = await pool.query("SELECT * FROM targets WHERE completed = TRUE ORDER BY completed_at DESC");
-            return { targets: active.rows.map(rowToTask), completed: completed.rows.map(rowToTask) };
+            return { targets: active.rows.map(rowToTarget), completed: completed.rows.map(rowToTarget) };
         },
         async createTarget(id, title, notes) {
+            // Auto-generate next target_number
+            const maxRes = await pool.query("SELECT COALESCE(MAX(target_number), 0) as max_num FROM targets");
+            const nextNum = maxRes.rows[0].max_num + 1;
             const result = await pool.query(
-                "INSERT INTO targets (id, title, notes) VALUES ($1, $2, $3) RETURNING *", [id, title, notes]
+                "INSERT INTO targets (id, title, notes, target_number) VALUES ($1, $2, $3, $4) RETURNING *", [id, title, notes, nextNum]
             );
-            return rowToTask(result.rows[0]);
+            return rowToTarget(result.rows[0]);
         },
         async updateTarget(id, fields) {
             const sets = []; const values = []; let idx = 1;
@@ -147,26 +156,38 @@ if (process.env.DATABASE_URL) {
             if (sets.length === 0) return null;
             values.push(id);
             const result = await pool.query(`UPDATE targets SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`, values);
-            return result.rows.length ? rowToTask(result.rows[0]) : null;
+            return result.rows.length ? rowToTarget(result.rows[0]) : null;
         },
         async completeTarget(id) {
             const result = await pool.query("UPDATE targets SET completed = TRUE, completed_at = NOW() WHERE id = $1 RETURNING *", [id]);
-            return result.rows.length ? rowToTask(result.rows[0]) : null;
+            return result.rows.length ? rowToTarget(result.rows[0]) : null;
         },
         async uncompleteTarget(id) {
             const result = await pool.query("UPDATE targets SET completed = FALSE, completed_at = NULL WHERE id = $1 RETURNING *", [id]);
-            return result.rows.length ? rowToTask(result.rows[0]) : null;
+            return result.rows.length ? rowToTarget(result.rows[0]) : null;
         },
         async deleteTarget(id) {
             const result = await pool.query("DELETE FROM targets WHERE id = $1", [id]);
             return result.rowCount > 0;
+        },
+        async getTasksForTarget(targetNumber) {
+            const active = await pool.query("SELECT * FROM tasks WHERE target_number = $1 AND completed = FALSE ORDER BY created_at DESC", [targetNumber]);
+            const completed = await pool.query("SELECT * FROM tasks WHERE target_number = $1 AND completed = TRUE ORDER BY completed_at DESC", [targetNumber]);
+            return { active: active.rows.map(rowToTask), completed: completed.rows.map(rowToTask) };
         },
     };
 
     function rowToTask(row) {
         const task = { id: row.id, title: row.title, notes: row.notes, createdAt: row.created_at };
         if (row.completed_at) task.completedAt = row.completed_at;
+        if (row.target_number) task.targetNumber = row.target_number;
         return task;
+    }
+
+    function rowToTarget(row) {
+        const target = { id: row.id, title: row.title, notes: row.notes, createdAt: row.created_at, targetNumber: row.target_number };
+        if (row.completed_at) target.completedAt = row.completed_at;
+        return target;
     }
 } else {
     // --- JSON file storage (local dev) ---
@@ -185,9 +206,10 @@ if (process.env.DATABASE_URL) {
     db = {
         async init() { ensureDataFile(); },
         async getAll() { return readData(); },
-        async create(id, title, notes) {
+        async create(id, title, notes, targetNumber) {
             const data = readData();
             const task = { id, title, notes, createdAt: new Date().toISOString() };
+            if (targetNumber) task.targetNumber = targetNumber;
             data.tasks.unshift(task);
             writeData(data);
             return task;
@@ -198,6 +220,7 @@ if (process.env.DATABASE_URL) {
             if (!task) return null;
             if (fields.title !== undefined) task.title = fields.title;
             if (fields.notes !== undefined) task.notes = fields.notes;
+            if (fields.targetNumber !== undefined) task.targetNumber = fields.targetNumber;
             writeData(data);
             return task;
         },
@@ -237,7 +260,9 @@ if (process.env.DATABASE_URL) {
         async createTarget(id, title, notes) {
             const data = readData();
             if (!data.targets) data.targets = [];
-            const target = { id, title, notes, createdAt: new Date().toISOString() };
+            const allTargets = [...(data.targets || []), ...(data.targetsCompleted || [])];
+            const maxNum = allTargets.reduce((max, t) => Math.max(max, t.targetNumber || 0), 0);
+            const target = { id, title, notes, targetNumber: maxNum + 1, createdAt: new Date().toISOString() };
             data.targets.unshift(target);
             writeData(data);
             return target;
@@ -283,6 +308,12 @@ if (process.env.DATABASE_URL) {
             if (idx !== -1) { data.targetsCompleted.splice(idx, 1); writeData(data); return true; }
             return false;
         },
+        async getTasksForTarget(targetNumber) {
+            const data = readData();
+            const active = (data.tasks || []).filter(t => t.targetNumber === targetNumber);
+            const completed = (data.completed || []).filter(t => t.targetNumber === targetNumber);
+            return { active, completed };
+        },
     };
 }
 
@@ -296,18 +327,18 @@ app.get("/api/tasks", async (req, res) => {
 });
 
 app.post("/api/tasks", async (req, res) => {
-    const { title, notes } = req.body;
+    const { title, notes, targetNumber } = req.body;
     if (!title) return res.status(400).json({ error: "title is required" });
     try {
-        const task = await db.create(Date.now().toString(), title, notes || "");
+        const task = await db.create(Date.now().toString(), title, notes || "", targetNumber || null);
         res.status(201).json(task);
     } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
 });
 
 app.patch("/api/tasks/:id", async (req, res) => {
-    const { title, notes } = req.body;
+    const { title, notes, targetNumber } = req.body;
     try {
-        const task = await db.update(req.params.id, { title, notes });
+        const task = await db.update(req.params.id, { title, notes, targetNumber });
         if (!task) return res.status(404).json({ error: "task not found" });
         res.json(task);
     } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
@@ -385,6 +416,13 @@ app.delete("/api/targets/:id", async (req, res) => {
         const deleted = await db.deleteTarget(req.params.id);
         if (!deleted) return res.status(404).json({ error: "target not found" });
         res.status(204).send();
+    } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
+});
+
+app.get("/api/targets/:targetNumber/tasks", async (req, res) => {
+    try {
+        const result = await db.getTasksForTarget(parseInt(req.params.targetNumber));
+        res.json(result);
     } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
 });
 

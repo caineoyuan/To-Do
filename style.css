@@ -534,6 +534,96 @@ h1 {
     font-size: 1.1rem;
 }
 
+.month-section > summary .section-title {
+    font-size: 1.4rem;
+    font-style: italic;
+}
+
+/* Target ID badge */
+.target-id-badge {
+    display: inline-block;
+    background: rgba(238, 169, 43, 0.2);
+    color: #EEA92B;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-right: 6px;
+    font-family: monospace;
+}
+
+/* Target progress bar */
+.target-progress-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.target-progress-fill {
+    height: 100%;
+    background: #EEA92B;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* Target children panel */
+.target-children {
+    margin-top: 8px;
+    padding-left: 4px;
+}
+
+.child-task-item {
+    font-size: 0.8rem;
+    color: #ccc;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.child-task-done {
+    color: #888;
+    text-decoration: line-through;
+}
+
+.child-task-dot {
+    font-size: 0.6rem;
+}
+
+/* Parent target badge on tasks */
+.parent-target-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    color: #EEA92B;
+    cursor: pointer;
+    margin-left: 6px;
+    opacity: 0.7;
+}
+
+.parent-target-badge:hover {
+    opacity: 1;
+}
+
+.task-parent-detail {
+    margin-top: 4px;
+}
+
+.parent-target-info {
+    font-size: 0.75rem;
+    color: #ccc;
+    padding: 4px 8px;
+    background: rgba(238, 169, 43, 0.08);
+    border-radius: 4px;
+}
+
+.parent-target-id {
+    opacity: 0.5;
+    font-family: monospace;
+}
+
 .hidden {
     display: none !important;
 }
