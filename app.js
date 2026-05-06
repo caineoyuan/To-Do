@@ -528,7 +528,8 @@ function deleteTarget(targetId, element) {
 }
 
 function createTargetElement(target, isCompleted) {
-    const { priority, titleWithoutPriority } = parsePriority(target.title);
+    const titleForDisplay = target.displayTitle || target.title;
+    const { priority, titleWithoutPriority } = parsePriority(titleForDisplay);
     const displayTitle = titleWithoutPriority;
 
     const item = document.createElement("div");
