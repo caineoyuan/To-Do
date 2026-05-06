@@ -21,9 +21,9 @@ body {
     display: flex;
     gap: 24px;
     width: 100%;
-    max-width: 1060px;
     align-items: flex-start;
     justify-content: center;
+    position: relative;
 }
 
 .app {
@@ -42,10 +42,12 @@ body {
 
 .panel-targets {
     flex: 0 0 500px;
+    position: absolute;
+    right: calc(50% + 274px);
 }
 
 .title-icon-targets {
-    color: #f5c518;
+    color: #EEA92B;
 }
 
 header {
