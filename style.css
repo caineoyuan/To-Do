@@ -46,6 +46,28 @@ body {
     right: calc(50% + 274px);
 }
 
+@media (max-width: 1200px) {
+    .app-layout {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: center;
+        overflow-x: auto;
+    }
+
+    .panel-targets {
+        position: static;
+        flex: 0 0 auto;
+        max-width: 400px;
+        min-width: 300px;
+    }
+
+    .panel-tasks {
+        flex: 0 0 auto;
+        max-width: 500px;
+        min-width: 350px;
+    }
+}
+
 .title-icon-targets {
     color: #EEA92B;
 }
