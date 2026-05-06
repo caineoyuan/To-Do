@@ -369,7 +369,12 @@ function createTaskElement(task, isCompleted) {
         function saveEdit() {
             const newTitle = input.value.trim();
             if (newTitle && newTitle !== task.title) {
-                apiUpdateTask(task.id, { title: newTitle }).then(() => loadTasks());
+                const { targetNumber } = parseSuffixes(newTitle);
+                let validTargetNum = null;
+                if (targetNumber && allTargets.some(t => t.targetNumber === targetNumber)) {
+                    validTargetNum = targetNumber;
+                }
+                apiUpdateTask(task.id, { title: newTitle, targetNumber: validTargetNum }).then(() => loadTasks());
                 return;
             }
             loadTasks();
