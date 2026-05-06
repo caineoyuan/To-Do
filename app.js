@@ -377,7 +377,7 @@ function createTaskElement(task, isCompleted) {
                 if (targetNumber && allTargets.some(t => t.targetNumber === targetNumber)) {
                     validTargetNum = targetNumber;
                 }
-                apiUpdateTask(task.id, { title: newTitle, targetNumber: validTargetNum }).then(() => loadTasks());
+                apiUpdateTask(task.id, { title: newTitle, targetNumber: validTargetNum }).then(() => { loadTasks(); loadTargets(); });
                 return;
             }
             loadTasks();

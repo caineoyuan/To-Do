@@ -100,6 +100,33 @@ if (process.env.DATABASE_URL) {
             // Add columns if they don't exist (for existing deployments)
             await pool.query(`ALTER TABLE targets ADD COLUMN IF NOT EXISTS target_number INTEGER UNIQUE`);
             await pool.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS target_number INTEGER`);
+
+            // Re-link tasks whose title contains a target suffix but target_number is null
+            const unlinked = await pool.query("SELECT id, title FROM tasks WHERE target_number IS NULL");
+            const allTargetsRes = await pool.query("SELECT target_number FROM targets");
+            const validNums = new Set(allTargetsRes.rows.map(r => r.target_number));
+            for (const row of unlinked.rows) {
+                const tMatch = row.title.match(/\s*-\s*(\d+)\s*$/);
+                if (tMatch) {
+                    const num = parseInt(tMatch[1]);
+                    if (validNums.has(num)) {
+                        await pool.query("UPDATE tasks SET target_number = $1 WHERE id = $2", [num, row.id]);
+                    }
+                } else {
+                    // Check if priority is rightmost, then target next
+                    const pMatch = row.title.match(/\s*-\s*P[012]\s*$/i);
+                    if (pMatch) {
+                        const remaining = row.title.slice(0, -pMatch[0].length);
+                        const tMatch2 = remaining.match(/\s*-\s*(\d+)\s*$/);
+                        if (tMatch2) {
+                            const num = parseInt(tMatch2[1]);
+                            if (validNums.has(num)) {
+                                await pool.query("UPDATE tasks SET target_number = $1 WHERE id = $2", [num, row.id]);
+                            }
+                        }
+                    }
+                }
+            }
         },
         async getAll() {
             const active = await pool.query("SELECT * FROM tasks WHERE completed = FALSE ORDER BY created_at DESC");
