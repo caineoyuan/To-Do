@@ -225,6 +225,7 @@ function completeTask(taskId, element) {
             setTimeout(() => {
                 element.remove();
                 loadTasks();
+                loadTargets();
             }, 300);
         }, 400);
     }, 200);
@@ -272,7 +273,7 @@ function createTaskElement(task, isCompleted) {
         <div class="task-checkbox${isCompleted ? " checked" : ""}" data-id="${task.id}"></div>
         <div class="task-content">
             <span class="task-title">${escapeHtml(displayTitle)}</span>
-            ${parentBadge}
+            ${parentBadge ? `<div class="task-parent-line">${parentBadge}</div>` : ""}
             ${timestamp ? `<span class="task-timestamp">${timestamp}</span>` : ""}
             <div class="task-notes-panel hidden">
                 <div class="task-notes-links"></div>
