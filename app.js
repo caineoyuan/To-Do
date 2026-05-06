@@ -143,18 +143,18 @@ function parseSuffixes(title) {
     let priority = null;
     let targetNum = null;
 
-    // Check for priority suffix first (rightmost)
-    const pMatch = remaining.match(/\s*-\s*(P[012])\s*$/i);
-    if (pMatch) {
-        priority = pMatch[1].toUpperCase();
-        remaining = remaining.slice(0, -pMatch[0].length);
-    }
-
-    // Then check for target number suffix
+    // Check for target number suffix first (rightmost, starts with digit)
     const tMatch = remaining.match(/\s*-\s*(\d+)\s*$/);
     if (tMatch) {
         targetNum = parseInt(tMatch[1]);
         remaining = remaining.slice(0, -tMatch[0].length);
+    }
+
+    // Then check for priority suffix (next from right, starts with P)
+    const pMatch = remaining.match(/\s*-\s*(P[012])\s*$/i);
+    if (pMatch) {
+        priority = pMatch[1].toUpperCase();
+        remaining = remaining.slice(0, -pMatch[0].length);
     }
 
     return { priority, targetNumber: targetNum, cleanTitle: remaining };
