@@ -170,6 +170,7 @@ function createTaskElement(task, isCompleted) {
             <span class="task-title">${escapeHtml(displayTitle)}</span>
             ${timestamp ? `<span class="task-timestamp">${timestamp}</span>` : ""}
             <div class="task-notes-panel hidden">
+                <div class="task-notes-links"></div>
                 <textarea class="task-notes" placeholder="Add notes...">${escapeHtml(task.notes || "")}</textarea>
             </div>
         </div>
@@ -183,12 +184,44 @@ function createTaskElement(task, isCompleted) {
     const titleEl = item.querySelector(".task-title");
     const notesPanel = item.querySelector(".task-notes-panel");
     const notesArea = item.querySelector(".task-notes");
+    const notesLinks = item.querySelector(".task-notes-links");
     const editBtn = item.querySelector(".task-edit");
+
+    // Extract hyperlinks from notes and render as buttons
+    function renderNoteLinks(text) {
+        notesLinks.innerHTML = "";
+        const urlRegex = /https?:\/\/[^\s]+/g;
+        const matches = text.match(urlRegex);
+        if (matches) {
+            matches.forEach(url => {
+                const btn = document.createElement("a");
+                btn.href = url;
+                btn.target = "_blank";
+                btn.rel = "noopener noreferrer";
+                btn.className = "note-link-btn";
+                // Show shortened URL as label
+                try {
+                    const u = new URL(url);
+                    btn.textContent = u.hostname + (u.pathname !== "/" ? u.pathname.slice(0, 30) : "");
+                } catch { btn.textContent = url.slice(0, 40); }
+                notesLinks.appendChild(btn);
+            });
+        }
+    }
+
+    // Auto-expand textarea to fit content
+    function autoExpand() {
+        notesArea.style.height = "auto";
+        notesArea.style.height = notesArea.scrollHeight + "px";
+    }
+
+    renderNoteLinks(task.notes || "");
 
     titleEl.addEventListener("click", (e) => {
         e.stopPropagation();
         notesPanel.classList.toggle("hidden");
         if (!notesPanel.classList.contains("hidden")) {
+            autoExpand();
             notesArea.focus();
         }
     });
@@ -221,6 +254,8 @@ function createTaskElement(task, isCompleted) {
 
     if (!isCompleted) {
         notesArea.addEventListener("input", () => {
+            autoExpand();
+            renderNoteLinks(notesArea.value);
             updateTaskNotes(task.id, notesArea.value);
         });
 

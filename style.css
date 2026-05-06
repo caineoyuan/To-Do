@@ -289,7 +289,8 @@ h1 {
     color: #f0f0f0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 0.85rem;
-    resize: vertical;
+    resize: none;
+    overflow: hidden;
     outline: none;
     transition: border-color 0.2s;
 }
@@ -300,6 +301,34 @@ h1 {
 
 .task-notes::placeholder {
     color: #aaa;
+}
+
+.task-notes-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.task-notes-links:empty {
+    display: none;
+}
+
+.note-link-btn {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #0078d4;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.note-link-btn:hover {
+    background: #1a8ae8;
 }
 
 .task-item.completed .task-title {
