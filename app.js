@@ -201,16 +201,19 @@ function createTaskElement(task, isCompleted) {
                 btn.className = "note-link-btn";
                 const lower = url.toLowerCase();
                 if (lower.includes("teams")) {
-                    btn.textContent = "Go to Teams Chat";
+                    btn.innerHTML = `<img class="note-link-icon" src="https://upload.wikimedia.org/wikipedia/commons/0/07/Microsoft_Office_Teams_%282025%E2%80%93present%29.svg" alt="Teams"> Teams Chat`;
                     btn.classList.add("note-link-teams");
                 } else if (lower.includes("outlook")) {
-                    btn.textContent = "Go to Email";
+                    btn.innerHTML = `<img class="note-link-icon" src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Microsoft_Outlook_Icon_%282025%E2%80%93present%29.svg" alt="Outlook"> Email`;
                     btn.classList.add("note-link-outlook");
                 } else {
+                    // Fluent UI link icon
+                    btn.innerHTML = `<svg class="note-link-icon" width="12" height="12" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.72 3.72a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 1 1-1.06-1.06L11.44 9H3.75a.75.75 0 0 1 0-1.5h7.69L7.72 4.78a.75.75 0 0 1 0-1.06Z"/><path d="M13.5 3.75a.75.75 0 0 1 1.5 0v12.5a.75.75 0 0 1-1.5 0V3.75Z"/></svg>`;
                     try {
                         const u = new URL(url);
-                        btn.textContent = u.hostname.replace("www.", "");
-                    } catch { btn.textContent = "Open Link"; }
+                        btn.innerHTML += ` ${u.hostname.replace("www.", "")}`;
+                    } catch { btn.innerHTML += " Open Link"; }
+                    btn.classList.add("note-link-generic");
                 }
                 notesLinks.appendChild(btn);
             });
