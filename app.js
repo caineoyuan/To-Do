@@ -986,11 +986,12 @@ document.getElementById("export-targets-btn").addEventListener("click", async ()
         }
     });
 
+    let html = "";
     let text = "";
     const sortedMonths = Object.keys(monthGroups).sort((a, b) => b.localeCompare(a));
     sortedMonths.forEach(month => {
-        text += `**${month} Targets:**\n`;
-        // Sub-group by prefix
+        html += `<b>${month} Targets:</b><ul>`;
+        text += `${month} Targets:\n`;
         const subGroups = {};
         const subUngrouped = [];
         monthGroups[month].forEach(title => {
@@ -1002,19 +1003,24 @@ document.getElementById("export-targets-btn").addEventListener("click", async ()
                 subUngrouped.push(parseSuffixes(title).cleanTitle);
             }
         });
-        subUngrouped.forEach(t => { text += `- ${t}\n`; });
+        subUngrouped.forEach(t => { html += `<li>${escapeHtml(t)}</li>`; text += `- ${t}\n`; });
         Object.keys(subGroups).sort().forEach(prefix => {
-            text += `- **${prefix}**\n`;
-            subGroups[prefix].forEach(t => { text += `  - ${t}\n`; });
+            html += `<li><b>${escapeHtml(prefix)}</b><ul>`;
+            text += `- ${prefix}\n`;
+            subGroups[prefix].forEach(t => { html += `<li>${escapeHtml(t)}</li>`; text += `  - ${t}\n`; });
+            html += `</ul></li>`;
         });
+        html += `</ul>`;
         text += "\n";
     });
     if (ungrouped.length) {
-        text += `**Other Targets:**\n`;
-        ungrouped.forEach(t => { text += `- ${parseSuffixes(t).cleanTitle}\n`; });
+        html += `<b>Other Targets:</b><ul>`;
+        text += `Other Targets:\n`;
+        ungrouped.forEach(t => { const c = parseSuffixes(t).cleanTitle; html += `<li>${escapeHtml(c)}</li>`; text += `- ${c}\n`; });
+        html += `</ul>`;
     }
 
-    navigator.clipboard.writeText(text.trim());
+    copyRichText(html, text.trim());
     showExportToast("Targets copied to clipboard!");
 });
 
@@ -1036,16 +1042,28 @@ document.getElementById("export-tasks-btn").addEventListener("click", async () =
         }
     });
 
-    let text = "**Tasks:**\n";
+    let html = "<b>Tasks:</b><ul>";
+    let text = "Tasks:\n";
     Object.keys(prefixGroups).sort().forEach(prefix => {
-        text += `- **${prefix}**\n`;
-        prefixGroups[prefix].forEach(t => { text += `  - ${t}\n`; });
+        html += `<li><b>${escapeHtml(prefix)}</b><ul>`;
+        text += `- ${prefix}\n`;
+        prefixGroups[prefix].forEach(t => { html += `<li>${escapeHtml(t)}</li>`; text += `  - ${t}\n`; });
+        html += `</ul></li>`;
     });
-    ungrouped.forEach(t => { text += `- ${t}\n`; });
+    ungrouped.forEach(t => { html += `<li>${escapeHtml(t)}</li>`; text += `- ${t}\n`; });
+    html += `</ul>`;
 
-    navigator.clipboard.writeText(text.trim());
+    copyRichText(html, text.trim());
     showExportToast("Tasks copied to clipboard!");
 });
+
+function copyRichText(html, plainText) {
+    const htmlBlob = new Blob([html], { type: "text/html" });
+    const textBlob = new Blob([plainText], { type: "text/plain" });
+    navigator.clipboard.write([
+        new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob })
+    ]);
+}
 
 function showExportToast(msg) {
     const toast = document.createElement("div");
