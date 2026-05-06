@@ -199,11 +199,19 @@ function createTaskElement(task, isCompleted) {
                 btn.target = "_blank";
                 btn.rel = "noopener noreferrer";
                 btn.className = "note-link-btn";
-                // Show shortened URL as label
-                try {
-                    const u = new URL(url);
-                    btn.textContent = u.hostname + (u.pathname !== "/" ? u.pathname.slice(0, 30) : "");
-                } catch { btn.textContent = url.slice(0, 40); }
+                const lower = url.toLowerCase();
+                if (lower.includes("teams")) {
+                    btn.textContent = "Go to Teams Chat";
+                    btn.classList.add("note-link-teams");
+                } else if (lower.includes("outlook")) {
+                    btn.textContent = "Go to Email";
+                    btn.classList.add("note-link-outlook");
+                } else {
+                    try {
+                        const u = new URL(url);
+                        btn.textContent = u.hostname.replace("www.", "");
+                    } catch { btn.textContent = "Open Link"; }
+                }
                 notesLinks.appendChild(btn);
             });
         }
