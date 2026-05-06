@@ -259,7 +259,7 @@ function createTaskElement(task, isCompleted) {
         : "";
 
     const parentBadge = parentTarget
-        ? `<span class="parent-target-badge" title="${escapeHtml(parentTarget.title)}">🎯 ${String(parentTarget.targetNumber).padStart(2, '0')}</span>`
+        ? `<span class="parent-target-badge" title="${escapeHtml(parentTarget.title)}"><svg class="parent-target-icon" width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span class="target-id-badge">${String(parentTarget.targetNumber).padStart(2, '0')}</span></span>`
         : "";
 
     const timestamp = isCompleted && task.completedAt
@@ -735,7 +735,7 @@ function createTargetElement(target, isCompleted) {
                         data.completed.forEach(t => {
                             const el = document.createElement("div");
                             el.className = "child-task-item child-task-done";
-                            el.innerHTML = `<span class="child-task-dot">●</span> ${escapeHtml(parseSuffixes(t.title).cleanTitle)}`;
+                            el.innerHTML = `<svg class="child-task-check" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> ${escapeHtml(parseSuffixes(t.title).cleanTitle)}`;
                             childrenPanel.appendChild(el);
                         });
                     }

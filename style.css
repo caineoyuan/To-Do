@@ -595,9 +595,9 @@ h1 {
 
 /* Parent target badge on tasks */
 .parent-target-badge {
-    display: inline-block;
-    font-size: 0.65rem;
-    color: #EEA92B;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     cursor: pointer;
     margin-left: 6px;
     opacity: 0.7;
@@ -605,6 +605,15 @@ h1 {
 
 .parent-target-badge:hover {
     opacity: 1;
+}
+
+.parent-target-icon {
+    color: #EEA92B;
+}
+
+.child-task-check {
+    flex-shrink: 0;
+    margin-right: 4px;
 }
 
 .task-parent-detail {
