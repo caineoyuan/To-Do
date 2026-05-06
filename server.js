@@ -85,6 +85,16 @@ if (process.env.DATABASE_URL) {
                     completed_at TIMESTAMPTZ
                 )
             `);
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS targets (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    notes TEXT DEFAULT '',
+                    completed BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    completed_at TIMESTAMPTZ
+                )
+            `);
         },
         async getAll() {
             const active = await pool.query("SELECT * FROM tasks WHERE completed = FALSE ORDER BY created_at DESC");
@@ -116,6 +126,39 @@ if (process.env.DATABASE_URL) {
         },
         async delete(id) {
             const result = await pool.query("DELETE FROM tasks WHERE id = $1", [id]);
+            return result.rowCount > 0;
+        },
+        // Targets
+        async getAllTargets() {
+            const active = await pool.query("SELECT * FROM targets WHERE completed = FALSE ORDER BY created_at DESC");
+            const completed = await pool.query("SELECT * FROM targets WHERE completed = TRUE ORDER BY completed_at DESC");
+            return { targets: active.rows.map(rowToTask), completed: completed.rows.map(rowToTask) };
+        },
+        async createTarget(id, title, notes) {
+            const result = await pool.query(
+                "INSERT INTO targets (id, title, notes) VALUES ($1, $2, $3) RETURNING *", [id, title, notes]
+            );
+            return rowToTask(result.rows[0]);
+        },
+        async updateTarget(id, fields) {
+            const sets = []; const values = []; let idx = 1;
+            if (fields.title !== undefined) { sets.push(`title = $${idx++}`); values.push(fields.title); }
+            if (fields.notes !== undefined) { sets.push(`notes = $${idx++}`); values.push(fields.notes); }
+            if (sets.length === 0) return null;
+            values.push(id);
+            const result = await pool.query(`UPDATE targets SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`, values);
+            return result.rows.length ? rowToTask(result.rows[0]) : null;
+        },
+        async completeTarget(id) {
+            const result = await pool.query("UPDATE targets SET completed = TRUE, completed_at = NOW() WHERE id = $1 RETURNING *", [id]);
+            return result.rows.length ? rowToTask(result.rows[0]) : null;
+        },
+        async uncompleteTarget(id) {
+            const result = await pool.query("UPDATE targets SET completed = FALSE, completed_at = NULL WHERE id = $1 RETURNING *", [id]);
+            return result.rows.length ? rowToTask(result.rows[0]) : null;
+        },
+        async deleteTarget(id) {
+            const result = await pool.query("DELETE FROM targets WHERE id = $1", [id]);
             return result.rowCount > 0;
         },
     };
@@ -186,6 +229,60 @@ if (process.env.DATABASE_URL) {
             if (idx !== -1) { data.completed.splice(idx, 1); writeData(data); return true; }
             return false;
         },
+        // Targets (JSON fallback)
+        async getAllTargets() {
+            const data = readData();
+            return { targets: data.targets || [], completed: data.targetsCompleted || [] };
+        },
+        async createTarget(id, title, notes) {
+            const data = readData();
+            if (!data.targets) data.targets = [];
+            const target = { id, title, notes, createdAt: new Date().toISOString() };
+            data.targets.unshift(target);
+            writeData(data);
+            return target;
+        },
+        async updateTarget(id, fields) {
+            const data = readData();
+            const target = (data.targets || []).find(t => t.id === id) || (data.targetsCompleted || []).find(t => t.id === id);
+            if (!target) return null;
+            if (fields.title !== undefined) target.title = fields.title;
+            if (fields.notes !== undefined) target.notes = fields.notes;
+            writeData(data);
+            return target;
+        },
+        async completeTarget(id) {
+            const data = readData();
+            if (!data.targets) data.targets = [];
+            if (!data.targetsCompleted) data.targetsCompleted = [];
+            const idx = data.targets.findIndex(t => t.id === id);
+            if (idx === -1) return null;
+            const [target] = data.targets.splice(idx, 1);
+            target.completedAt = new Date().toISOString();
+            data.targetsCompleted.unshift(target);
+            writeData(data);
+            return target;
+        },
+        async uncompleteTarget(id) {
+            const data = readData();
+            if (!data.targets) data.targets = [];
+            if (!data.targetsCompleted) data.targetsCompleted = [];
+            const idx = data.targetsCompleted.findIndex(t => t.id === id);
+            if (idx === -1) return null;
+            const [target] = data.targetsCompleted.splice(idx, 1);
+            delete target.completedAt;
+            data.targets.unshift(target);
+            writeData(data);
+            return target;
+        },
+        async deleteTarget(id) {
+            const data = readData();
+            let idx = (data.targets || []).findIndex(t => t.id === id);
+            if (idx !== -1) { data.targets.splice(idx, 1); writeData(data); return true; }
+            idx = (data.targetsCompleted || []).findIndex(t => t.id === id);
+            if (idx !== -1) { data.targetsCompleted.splice(idx, 1); writeData(data); return true; }
+            return false;
+        },
     };
 }
 
@@ -236,6 +333,57 @@ app.delete("/api/tasks/:id", async (req, res) => {
     try {
         const deleted = await db.delete(req.params.id);
         if (!deleted) return res.status(404).json({ error: "task not found" });
+        res.status(204).send();
+    } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
+});
+
+// ============================================================
+// Targets Routes
+// ============================================================
+
+app.get("/api/targets", async (req, res) => {
+    try { res.json(await db.getAllTargets()); }
+    catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
+});
+
+app.post("/api/targets", async (req, res) => {
+    const { title, notes } = req.body;
+    if (!title) return res.status(400).json({ error: "title is required" });
+    try {
+        const target = await db.createTarget(Date.now().toString(), title, notes || "");
+        res.status(201).json(target);
+    } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
+});
+
+app.patch("/api/targets/:id", async (req, res) => {
+    const { title, notes } = req.body;
+    try {
+        const target = await db.updateTarget(req.params.id, { title, notes });
+        if (!target) return res.status(404).json({ error: "target not found" });
+        res.json(target);
+    } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
+});
+
+app.post("/api/targets/:id/complete", async (req, res) => {
+    try {
+        const target = await db.completeTarget(req.params.id);
+        if (!target) return res.status(404).json({ error: "target not found" });
+        res.json(target);
+    } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
+});
+
+app.post("/api/targets/:id/uncomplete", async (req, res) => {
+    try {
+        const target = await db.uncompleteTarget(req.params.id);
+        if (!target) return res.status(404).json({ error: "target not found" });
+        res.json(target);
+    } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
+});
+
+app.delete("/api/targets/:id", async (req, res) => {
+    try {
+        const deleted = await db.deleteTarget(req.params.id);
+        if (!deleted) return res.status(404).json({ error: "target not found" });
         res.status(204).send();
     } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
 });
