@@ -143,18 +143,31 @@ function parseSuffixes(title) {
     let priority = null;
     let targetNum = null;
 
-    // Check for target number suffix first (rightmost, starts with digit)
+    // Try stripping from right: could be "- 05", "- P0", "- P0 - 05", or "- 05 - P0"
+    // First pass: check rightmost suffix
     const tMatch = remaining.match(/\s*-\s*(\d+)\s*$/);
+    const pMatch = remaining.match(/\s*-\s*(P[012])\s*$/i);
+
     if (tMatch) {
+        // Rightmost is target number
         targetNum = parseInt(tMatch[1]);
         remaining = remaining.slice(0, -tMatch[0].length);
-    }
-
-    // Then check for priority suffix (next from right, starts with P)
-    const pMatch = remaining.match(/\s*-\s*(P[012])\s*$/i);
-    if (pMatch) {
+        // Check if priority is next
+        const pMatch2 = remaining.match(/\s*-\s*(P[012])\s*$/i);
+        if (pMatch2) {
+            priority = pMatch2[1].toUpperCase();
+            remaining = remaining.slice(0, -pMatch2[0].length);
+        }
+    } else if (pMatch) {
+        // Rightmost is priority
         priority = pMatch[1].toUpperCase();
         remaining = remaining.slice(0, -pMatch[0].length);
+        // Check if target number is next
+        const tMatch2 = remaining.match(/\s*-\s*(\d+)\s*$/);
+        if (tMatch2) {
+            targetNum = parseInt(tMatch2[1]);
+            remaining = remaining.slice(0, -tMatch2[0].length);
+        }
     }
 
     return { priority, targetNumber: targetNum, cleanTitle: remaining };
