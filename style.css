@@ -23,6 +23,7 @@ body {
     width: 100%;
     max-width: 1060px;
     align-items: flex-start;
+    justify-content: center;
 }
 
 .app {
@@ -33,7 +34,14 @@ body {
     padding: 30px;
     border: 1px solid #3a3a3a;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-    flex: 1;
+}
+
+.panel-tasks {
+    flex: 0 0 500px;
+}
+
+.panel-targets {
+    flex: 0 0 500px;
 }
 
 .title-icon-targets {
