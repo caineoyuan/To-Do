@@ -37,7 +37,7 @@ body {
 }
 
 .title-icon-targets {
-    color: #e6a817;
+    color: #f5c518;
 }
 
 header {
@@ -68,13 +68,13 @@ h1 {
     color: #4caf50;
 }
 
-#add-task-form {
+#add-task-form, #add-target-form {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
 }
 
-#task-input {
+#task-input, #target-input {
     flex: 1;
     padding: 14px 18px;
     border: 1px solid #444;
@@ -87,11 +87,11 @@ h1 {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-#task-input::placeholder {
+#task-input::placeholder, #target-input::placeholder {
     color: #888;
 }
 
-#task-input:focus {
+#task-input:focus, #target-input:focus {
     border-color: #0078d4;
     box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.12);
 }
