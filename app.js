@@ -968,6 +968,94 @@ addTargetForm.addEventListener("submit", (e) => {
     addTarget(title);
 });
 
+// Export targets as bulleted list
+document.getElementById("export-targets-btn").addEventListener("click", async () => {
+    const data = await fetch(`${API_BASE}/targets`).then(r => r.json());
+    const targets = data.targets || [];
+
+    const monthGroups = {};
+    const ungrouped = [];
+
+    targets.forEach(t => {
+        const { monthPrefix, rest } = parseMonthPrefix(t.title);
+        if (monthPrefix) {
+            if (!monthGroups[monthPrefix]) monthGroups[monthPrefix] = [];
+            monthGroups[monthPrefix].push(rest);
+        } else {
+            ungrouped.push(t.title);
+        }
+    });
+
+    let text = "";
+    const sortedMonths = Object.keys(monthGroups).sort((a, b) => b.localeCompare(a));
+    sortedMonths.forEach(month => {
+        text += `**${month} Targets:**\n`;
+        // Sub-group by prefix
+        const subGroups = {};
+        const subUngrouped = [];
+        monthGroups[month].forEach(title => {
+            const { prefix, displayTitle } = parsePrefix(title);
+            if (prefix) {
+                if (!subGroups[prefix]) subGroups[prefix] = [];
+                subGroups[prefix].push(parseSuffixes(displayTitle).cleanTitle);
+            } else {
+                subUngrouped.push(parseSuffixes(title).cleanTitle);
+            }
+        });
+        subUngrouped.forEach(t => { text += `- ${t}\n`; });
+        Object.keys(subGroups).sort().forEach(prefix => {
+            text += `- **${prefix}**\n`;
+            subGroups[prefix].forEach(t => { text += `  - ${t}\n`; });
+        });
+        text += "\n";
+    });
+    if (ungrouped.length) {
+        text += `**Other Targets:**\n`;
+        ungrouped.forEach(t => { text += `- ${parseSuffixes(t).cleanTitle}\n`; });
+    }
+
+    navigator.clipboard.writeText(text.trim());
+    showExportToast("Targets copied to clipboard!");
+});
+
+// Export tasks as bulleted list
+document.getElementById("export-tasks-btn").addEventListener("click", async () => {
+    const data = await fetch(`${API_BASE}/tasks`).then(r => r.json());
+    const tasks = data.tasks || [];
+
+    const prefixGroups = {};
+    const ungrouped = [];
+
+    tasks.forEach(t => {
+        const { prefix, displayTitle } = parsePrefix(t.title);
+        if (prefix) {
+            if (!prefixGroups[prefix]) prefixGroups[prefix] = [];
+            prefixGroups[prefix].push(parseSuffixes(displayTitle).cleanTitle);
+        } else {
+            ungrouped.push(parseSuffixes(t.title).cleanTitle);
+        }
+    });
+
+    let text = "**Tasks:**\n";
+    Object.keys(prefixGroups).sort().forEach(prefix => {
+        text += `- **${prefix}**\n`;
+        prefixGroups[prefix].forEach(t => { text += `  - ${t}\n`; });
+    });
+    ungrouped.forEach(t => { text += `- ${t}\n`; });
+
+    navigator.clipboard.writeText(text.trim());
+    showExportToast("Tasks copied to clipboard!");
+});
+
+function showExportToast(msg) {
+    const toast = document.createElement("div");
+    toast.className = "export-toast";
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add("show"), 10);
+    setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 2000);
+}
+
 // ============================================================
 // ============================================================
 // Init
