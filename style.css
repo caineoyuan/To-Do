@@ -68,10 +68,15 @@ header {
     cursor: pointer;
     opacity: 0.35;
     transition: opacity 0.2s;
-    color: #f0f0f0;
+    color: #ccc;
     display: inline-flex;
     align-items: center;
     margin-left: 6px;
+    vertical-align: middle;
+}
+
+.btn-export svg {
+    display: block;
 }
 
 .btn-export:hover {
