@@ -701,17 +701,20 @@ function createTargetElement(target, isCompleted) {
     const childrenPanel = item.querySelector(".target-children");
 
     if (target.targetNumber && !isCompleted) {
-        // Compute progress from cached task data
+        // Always show progress bar for targets with a number
+        progressWrapper.classList.remove("hidden");
         fetch(`${API_BASE}/targets/${target.targetNumber}/tasks`)
             .then(r => r.json())
             .then(data => {
                 const total = data.active.length + data.completed.length;
                 if (total > 0) {
                     const pct = Math.round((data.completed.length / total) * 100);
-                    progressWrapper.classList.remove("hidden");
                     progressFill.style.width = pct + "%";
                     progressPct.textContent = pct + "%";
                     progressFill.title = `${data.completed.length}/${total} tasks completed`;
+                } else {
+                    progressFill.style.width = "0%";
+                    progressPct.textContent = "0%";
                 }
             }).catch(() => {});
     }
