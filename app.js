@@ -861,76 +861,112 @@ function renderTargets(targets) {
         targetList.appendChild(createTargetElement(target, false));
     });
 
-    // Sort months (most recent first)
-    const sortedMonths = Object.keys(monthGroups).sort((a, b) => b.localeCompare(a));
+    // Determine current month in YYMM format
+    const now = new Date();
+    const currentMonth = String(now.getFullYear()).slice(2) + String(now.getMonth() + 1).padStart(2, '0');
 
-    sortedMonths.forEach((month) => {
-        const monthSection = document.createElement("details");
-        monthSection.className = "prefix-section month-section";
-        monthSection.open = true;
-
-        const monthSummary = document.createElement("summary");
-        monthSummary.innerHTML = `<span class="section-title">${month}</span><span class="section-count">${monthGroups[month].length}</span>`;
-        monthSection.appendChild(monthSummary);
-
-        const monthContent = document.createElement("div");
-        monthContent.className = "prefix-task-list";
-
-        // Sub-group by prefix within month
-        const subGroups = {};
-        const subUngrouped = [];
-
-        monthGroups[month].forEach((target) => {
-            const { prefix } = parsePrefix(target.displayTitle);
-            if (prefix) {
-                if (!subGroups[prefix]) subGroups[prefix] = [];
-                subGroups[prefix].push(target);
-            } else {
-                subUngrouped.push(target);
-            }
-        });
-
-        // Render ungrouped within month
-        subUngrouped.forEach((target) => {
-            monthContent.appendChild(createTargetElement(target, false));
-        });
-
-        // Sort sub-groups by average priority
-        const priorityOrder = { P0: 0, P1: 1, P2: 2 };
-        const sortedSubPrefixes = Object.keys(subGroups).sort((a, b) => {
-            const avgA = subGroups[a].reduce((sum, t) => {
-                const p = parsePriority(t.title).priority;
-                return sum + (p ? priorityOrder[p] : 3);
-            }, 0) / subGroups[a].length;
-            const avgB = subGroups[b].reduce((sum, t) => {
-                const p = parsePriority(t.title).priority;
-                return sum + (p ? priorityOrder[p] : 3);
-            }, 0) / subGroups[b].length;
-            if (avgA !== avgB) return avgA - avgB;
-            return a.localeCompare(b);
-        });
-
-        sortedSubPrefixes.forEach((prefix) => {
-            const subSection = document.createElement("details");
-            subSection.className = "prefix-section sub-section";
-            subSection.open = true;
-
-            const subSummary = document.createElement("summary");
-            subSummary.innerHTML = `<span class="section-title">${prefix}</span><span class="section-count">${subGroups[prefix].length}</span>`;
-            subSection.appendChild(subSummary);
-
-            const subList = document.createElement("div");
-            subList.className = "prefix-task-list";
-            subGroups[prefix].forEach((target) => {
-                subList.appendChild(createTargetElement(target, false));
-            });
-            subSection.appendChild(subList);
-            monthContent.appendChild(subSection);
-        });
-
-        monthSection.appendChild(monthContent);
-        targetList.appendChild(monthSection);
+    // Split months into current/future and past
+    const allMonths = Object.keys(monthGroups);
+    const currentAndFuture = allMonths.filter(m => m >= currentMonth).sort((a, b) => {
+        // Current month first, then ascending
+        if (a === currentMonth) return -1;
+        if (b === currentMonth) return 1;
+        return a.localeCompare(b);
     });
+    const pastMonths = allMonths.filter(m => m < currentMonth).sort((a, b) => b.localeCompare(a));
+
+    // Render current and future months
+    currentAndFuture.forEach((month) => {
+        targetList.appendChild(renderMonthSection(month, monthGroups[month], true));
+    });
+
+    // Render past months in a collapsed "Past" section
+    if (pastMonths.length > 0) {
+        const pastSection = document.createElement("details");
+        pastSection.className = "prefix-section month-section";
+        pastSection.open = false;
+
+        const pastSummary = document.createElement("summary");
+        const pastCount = pastMonths.reduce((sum, m) => sum + monthGroups[m].length, 0);
+        pastSummary.innerHTML = `<span class="section-title">Past</span><span class="section-count">${pastCount}</span>`;
+        pastSection.appendChild(pastSummary);
+
+        const pastContent = document.createElement("div");
+        pastContent.className = "prefix-task-list";
+        pastMonths.forEach((month) => {
+            pastContent.appendChild(renderMonthSection(month, monthGroups[month], false));
+        });
+        pastSection.appendChild(pastContent);
+        targetList.appendChild(pastSection);
+    }
+}
+
+function renderMonthSection(month, targets, open) {
+    const monthSection = document.createElement("details");
+    monthSection.className = "prefix-section month-section";
+    monthSection.open = open;
+
+    const monthSummary = document.createElement("summary");
+    monthSummary.innerHTML = `<span class="section-title">${month}</span><span class="section-count">${targets.length}</span>`;
+    monthSection.appendChild(monthSummary);
+
+    const monthContent = document.createElement("div");
+    monthContent.className = "prefix-task-list";
+
+    // Sub-group by prefix within month
+    const subGroups = {};
+    const subUngrouped = [];
+
+    targets.forEach((target) => {
+        const { prefix } = parsePrefix(target.displayTitle);
+        if (prefix) {
+            if (!subGroups[prefix]) subGroups[prefix] = [];
+            subGroups[prefix].push(target);
+        } else {
+            subUngrouped.push(target);
+        }
+    });
+
+    // Render ungrouped within month
+    subUngrouped.forEach((target) => {
+        monthContent.appendChild(createTargetElement(target, false));
+    });
+
+    // Sort sub-groups by average priority
+    const priorityOrder = { P0: 0, P1: 1, P2: 2 };
+    const sortedSubPrefixes = Object.keys(subGroups).sort((a, b) => {
+        const avgA = subGroups[a].reduce((sum, t) => {
+            const p = parsePriority(t.title).priority;
+            return sum + (p ? priorityOrder[p] : 3);
+        }, 0) / subGroups[a].length;
+        const avgB = subGroups[b].reduce((sum, t) => {
+            const p = parsePriority(t.title).priority;
+            return sum + (p ? priorityOrder[p] : 3);
+        }, 0) / subGroups[b].length;
+        if (avgA !== avgB) return avgA - avgB;
+        return a.localeCompare(b);
+    });
+
+    sortedSubPrefixes.forEach((prefix) => {
+        const subSection = document.createElement("details");
+        subSection.className = "prefix-section sub-section";
+        subSection.open = true;
+
+        const subSummary = document.createElement("summary");
+        subSummary.innerHTML = `<span class="section-title">${prefix}</span><span class="section-count">${subGroups[prefix].length}</span>`;
+        subSection.appendChild(subSummary);
+
+        const subList = document.createElement("div");
+        subList.className = "prefix-task-list";
+        subGroups[prefix].forEach((target) => {
+            subList.appendChild(createTargetElement(target, false));
+        });
+        subSection.appendChild(subList);
+        monthContent.appendChild(subSection);
+    });
+
+    monthSection.appendChild(monthContent);
+    return monthSection;
 }
 
 function renderCompletedTargets(completed) {
