@@ -196,6 +196,7 @@ async function addTask(title) {
     }
     await apiAddTask(title, validTargetNum);
     await loadTasks();
+    if (validTargetNum) loadTargets();
 }
 
 async function updateTaskNotes(taskId, notes) {
@@ -239,6 +240,7 @@ function deleteTask(taskId, element) {
     setTimeout(async () => {
         await apiDeleteTask(taskId);
         loadTasks();
+        loadTargets();
     }, 300);
 }
 
@@ -408,6 +410,7 @@ function createTaskElement(task, isCompleted) {
         item.querySelector(".task-checkbox").addEventListener("click", async () => {
             await apiUncompleteTask(task.id);
             loadTasks();
+            loadTargets();
         });
 
         item.querySelector(".task-delete").addEventListener("click", () => {
