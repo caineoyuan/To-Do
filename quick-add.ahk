@@ -10,6 +10,27 @@ TraySetIcon(A_ScriptDir . "\favicon.ico")
     CoordMode("Mouse", "Screen")
     MouseGetPos(&mx, &my)
     
+    ; Calculate position, keeping window on-screen
+    winW := 350
+    winH := 60
+    monW := SysGet(78)  ; SM_CXVIRTUALSCREEN
+    monH := SysGet(79)  ; SM_CYVIRTUALSCREEN
+    monL := SysGet(76)  ; SM_XVIRTUALSCREEN
+    monT := SysGet(77)  ; SM_YVIRTUALSCREEN
+    
+    winX := mx - 180
+    winY := my - 25
+    
+    ; Clamp to screen bounds
+    if (winX + winW > monL + monW)
+        winX := monL + monW - winW - 10
+    if (winX < monL)
+        winX := monL + 10
+    if (winY + winH > monT + monH)
+        winY := monT + monH - winH - 10
+    if (winY < monT)
+        winY := monT + 10
+    
     g := Gui("+AlwaysOnTop -Caption +Border")
     g.BackColor := "2a2a2a"
     g.MarginX := 12
@@ -53,9 +74,10 @@ TraySetIcon(A_ScriptDir . "\favicon.ico")
         g.Destroy()
     }
     
-    winX := mx - 180
-    winY := my - 25
     g.Show("x" . winX . " y" . winY)
+    
+    ; Force window to foreground
+    WinActivate(g.Hwnd)
     
     ; Set taskbar icon
     try {
