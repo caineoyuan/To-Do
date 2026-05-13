@@ -46,7 +46,7 @@ A personal task and target management app with a dark-themed UI, deployed on Rai
 | **Frontend** | Vanilla HTML/CSS/JS — single `index.html`, `style.css`, `app.js` |
 | **Backend** | [Express](https://expressjs.com/) (Node.js) — REST API with JSON endpoints |
 | **Database** | [PostgreSQL](https://www.postgresql.org/) via `pg` — with JSON file fallback for local dev |
-| **Auth** | API key header (`X-API-Key`) for the quick-add script |
+| **Auth** | API key via `TODO_API_KEY` environment variable for the quick-add script |
 | **Hosting** | [Railway](https://railway.app/) — auto-deploys from GitHub on push |
 | **Desktop** | [AutoHotkey v2](https://www.autohotkey.com/) — global hotkey script for quick task capture |
 

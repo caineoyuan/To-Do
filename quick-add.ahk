@@ -67,7 +67,7 @@ TraySetIcon(A_ScriptDir . "\favicon.ico")
             http := ComObject("WinHttp.WinHttpRequest.5.1")
             http.Open("POST", url, false)
             http.SetRequestHeader("Content-Type", "application/json")
-            http.SetRequestHeader("X-API-Key", "c30e37b7-0a39-45db-8808-4ec306e5d9b1")
+            http.SetRequestHeader("X-API-Key", EnvGet("TODO_API_KEY"))
             http.Send(body)
         }
         
