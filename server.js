@@ -6,7 +6,7 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const APP_PASSWORD = process.env.APP_PASSWORD || "todo";
+const APP_PASSWORD = process.env.APP_PASSWORD || "";
 const API_KEY = process.env.API_KEY || "";
 
 app.use(cors());
