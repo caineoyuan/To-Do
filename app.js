@@ -194,6 +194,23 @@ async function addTask(title) {
     if (targetNumber && allTargets.some(t => t.targetNumber === targetNumber)) {
         validTargetNum = targetNumber;
     }
+
+    // Auto-link by prefix if no explicit target ID
+    if (!validTargetNum) {
+        const { prefix } = parsePrefix(title);
+        if (prefix) {
+            // Find a target whose title (after month prefix) starts with the same prefix
+            const matchingTarget = allTargets.find(t => {
+                const { rest } = parseMonthPrefix(t.title);
+                const { prefix: tPrefix } = parsePrefix(rest);
+                return tPrefix === prefix;
+            });
+            if (matchingTarget && matchingTarget.targetNumber) {
+                validTargetNum = matchingTarget.targetNumber;
+            }
+        }
+    }
+
     await apiAddTask(title, validTargetNum);
     await loadTasks();
     if (validTargetNum) loadTargets();
@@ -376,6 +393,20 @@ function createTaskElement(task, isCompleted) {
                 let validTargetNum = null;
                 if (targetNumber && allTargets.some(t => t.targetNumber === targetNumber)) {
                     validTargetNum = targetNumber;
+                }
+                // Auto-link by prefix if no explicit target ID
+                if (!validTargetNum) {
+                    const { prefix } = parsePrefix(newTitle);
+                    if (prefix) {
+                        const matchingTarget = allTargets.find(t => {
+                            const { rest } = parseMonthPrefix(t.title);
+                            const { prefix: tPrefix } = parsePrefix(rest);
+                            return tPrefix === prefix;
+                        });
+                        if (matchingTarget && matchingTarget.targetNumber) {
+                            validTargetNum = matchingTarget.targetNumber;
+                        }
+                    }
                 }
                 apiUpdateTask(task.id, { title: newTitle, targetNumber: validTargetNum }).then(() => { loadTasks(); loadTargets(); });
                 return;

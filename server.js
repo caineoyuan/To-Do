@@ -103,14 +103,26 @@ if (process.env.DATABASE_URL) {
 
             // Re-link tasks whose title contains a target suffix but target_number is null
             const unlinked = await pool.query("SELECT id, title FROM tasks WHERE target_number IS NULL");
-            const allTargetsRes = await pool.query("SELECT target_number FROM targets");
+            const allTargetsRes = await pool.query("SELECT target_number, title FROM targets");
             const validNums = new Set(allTargetsRes.rows.map(r => r.target_number));
+            // Build prefix-to-target_number map for auto-linking
+            const prefixMap = {};
+            for (const t of allTargetsRes.rows) {
+                const monthMatch = t.title.match(/^\d{4}\s*-\s*/);
+                const rest = monthMatch ? t.title.slice(monthMatch[0].length) : t.title;
+                const prefixMatch = rest.match(/^([A-Z0-9]+)\s*-\s*/);
+                if (prefixMatch && t.target_number) {
+                    prefixMap[prefixMatch[1]] = t.target_number;
+                }
+            }
             for (const row of unlinked.rows) {
+                let linked = false;
                 const tMatch = row.title.match(/\s*-\s*(\d+)\s*$/);
                 if (tMatch) {
                     const num = parseInt(tMatch[1]);
                     if (validNums.has(num)) {
                         await pool.query("UPDATE tasks SET target_number = $1 WHERE id = $2", [num, row.id]);
+                        linked = true;
                     }
                 } else {
                     // Check if priority is rightmost, then target next
@@ -122,8 +134,16 @@ if (process.env.DATABASE_URL) {
                             const num = parseInt(tMatch2[1]);
                             if (validNums.has(num)) {
                                 await pool.query("UPDATE tasks SET target_number = $1 WHERE id = $2", [num, row.id]);
+                                linked = true;
                             }
                         }
+                    }
+                }
+                // Auto-link by prefix if no explicit target ID found
+                if (!linked) {
+                    const prefixMatch = row.title.match(/^([A-Z0-9]+)\s*-\s*/);
+                    if (prefixMatch && prefixMap[prefixMatch[1]]) {
+                        await pool.query("UPDATE tasks SET target_number = $1 WHERE id = $2", [prefixMap[prefixMatch[1]], row.id]);
                     }
                 }
             }
