@@ -377,7 +377,25 @@ app.post("/api/tasks", async (req, res) => {
     const { title, notes, targetNumber } = req.body;
     if (!title) return res.status(400).json({ error: "title is required" });
     try {
-        const task = await db.create(Date.now().toString(), title, notes || "", targetNumber || null);
+        let finalTargetNum = targetNumber || null;
+        // Auto-link by prefix if no target number provided
+        if (!finalTargetNum) {
+            const prefixMatch = title.match(/^([A-Z0-9]+)\s*-\s*/);
+            if (prefixMatch) {
+                const taskPrefix = prefixMatch[1];
+                const targets = (await db.getAllTargets()).targets || [];
+                for (const t of targets) {
+                    const monthMatch = t.title.match(/^\d{4}\s*-\s*/);
+                    const rest = monthMatch ? t.title.slice(monthMatch[0].length) : t.title;
+                    const tPrefixMatch = rest.match(/^([A-Z0-9]+)\s*-\s*/);
+                    if (tPrefixMatch && tPrefixMatch[1] === taskPrefix && t.targetNumber) {
+                        finalTargetNum = t.targetNumber;
+                        break;
+                    }
+                }
+            }
+        }
+        const task = await db.create(Date.now().toString(), title, notes || "", finalTargetNum);
         res.status(201).json(task);
     } catch (err) { console.error(err); res.status(500).json({ error: "Database error" }); }
 });
